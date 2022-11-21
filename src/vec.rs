@@ -82,12 +82,21 @@ impl Vec3 {
 
 	pub fn random_in_hemisphere<R: Rng + ?Sized>(rng: &mut R, normal: Self) -> Self {
 		let in_unit_sphere = Self::random_in_unit_sphere(rng);
-		if Self::dot(in_unit_sphere, normal) > 0.00 {
+		if Self::dot(in_unit_sphere, normal) > 0.0 {
 			// same hemisphere
 			in_unit_sphere
 		} else {
 			-in_unit_sphere
 		}
+	}
+
+	pub fn near_zero(&self) -> bool {
+		let epsilon = 1e-8;
+		return self.e.iter().all(|c| c.abs() < epsilon);
+	}
+
+	pub fn reflect(self, n: Self) -> Self {
+		self - 2.0 * self.dot(n) * n
 	}
 }
 
