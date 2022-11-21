@@ -16,7 +16,7 @@ use camera::Camera;
 use color::write_color;
 use hittable::Hittable;
 use hittable_list::HittableList;
-use material::{Lambertian, Metal};
+use material::{Dielectric, Lambertian, Metal};
 use ray::Ray;
 use sphere::Sphere;
 use vec::{Color, Point3, Vec3};
@@ -52,14 +52,11 @@ fn main() -> std::io::Result<()> {
 	let material_ground = Rc::new(Lambertian {
 		albedo: Color::new(0.8, 0.8, 0.0),
 	});
-	let material_center = Rc::new(Lambertian {
-		albedo: Color::new(0.7, 0.3, 0.3),
-	});
-	let material_left = Rc::new(Metal {
-		albedo: Color::new(0.8, 0.8, 0.8),
-	});
+	let material_center = Rc::new(Dielectric { ir: 1.5 });
+	let material_left = Rc::new(Dielectric { ir: 1.5 });
 	let material_right = Rc::new(Metal {
 		albedo: Color::new(0.8, 0.6, 0.2),
+		fuzz: 1.0,
 	});
 
 	world.add(Rc::new(Sphere::new(

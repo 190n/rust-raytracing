@@ -35,12 +35,17 @@ impl Material for Lambertian {
 #[derive(Debug)]
 pub struct Metal {
 	pub albedo: Color,
+	/// metal fuzziness, 0-1
+	pub fuzz: f64,
 }
 
 impl Material for Metal {
 	fn scatter(&self, rng: &mut dyn RngCore, r_in: &Ray, rec: &HitRecord) -> Option<ScatterResult> {
 		let reflected = r_in.direction().unit_vector().reflect(rec.normal);
-		let scattered = Ray::new(rec.p, reflected);
+		let scattered = Ray::new(
+			rec.p,
+			reflected + self.fuzz * Vec3::random_in_unit_sphere(rng),
+		);
 		if scattered.direction().dot(rec.normal) > 0.0 {
 			Some(ScatterResult {
 				attenuation: self.albedo,
@@ -49,5 +54,28 @@ impl Material for Metal {
 		} else {
 			None
 		}
+	}
+}
+
+#[derive(Debug)]
+pub struct Dielectric {
+	/// index of refraction
+	pub ir: f64,
+}
+
+impl Material for Dielectric {
+	fn scatter(&self, rng: &mut dyn RngCore, r_in: &Ray, rec: &HitRecord) -> Option<ScatterResult> {
+		let refraction_ratio = if rec.front_face {
+			1.0 / self.ir
+		} else {
+			self.ir
+		};
+
+		let unit_direction = r_in.direction().unit_vector();
+		let refracted = unit_direction.refract(rec.normal, refraction_ratio);
+		Some(ScatterResult {
+			attenuation: Color::new(1.0, 1.0, 1.0),
+			scattered: Ray::new(rec.p, refracted),
+		})
 	}
 }
