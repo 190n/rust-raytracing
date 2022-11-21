@@ -7,9 +7,9 @@ pub fn write_color(w: &mut impl Write, color: Color, samples_per_pixel: u32) -> 
 	let mut b = color.z();
 
 	let scale = 1.0 / samples_per_pixel as f64;
-	r *= scale;
-	g *= scale;
-	b *= scale;
+	r = (r * scale).sqrt();
+	g = (g * scale).sqrt();
+	b = (b * scale).sqrt();
 
 	writeln!(
 		w,

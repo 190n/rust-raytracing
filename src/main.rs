@@ -16,14 +16,21 @@ use color::write_color;
 use hittable::Hittable;
 use ray::Ray;
 use sphere::Sphere;
-use vec::{Color, Point3};
+use vec::{Color, Point3, Vec3};
 
-use crate::hittable_list::HittableList;
+use hittable_list::HittableList;
 
-fn ray_color(r: Ray, world: &dyn Hittable) -> Color {
-	if let Some(rec) = world.hit(r, 0.0, f64::INFINITY) {
-		return 0.5 * (rec.normal + Color::new(1.0, 1.0, 1.0));
+fn ray_color<R: Rng + ?Sized>(rng: &mut R, r: Ray, world: &dyn Hittable, depth: i32) -> Color {
+	if depth <= 0 {
+		return Color::zero();
 	}
+
+	if let Some(rec) = world.hit(r, 0.001, f64::INFINITY) {
+		let target = rec.p + rec.normal + Vec3::random_in_unit_sphere(rng);
+		return 0.5 * ray_color(rng, Ray::new(rec.p, target - rec.p), world, depth - 1);
+	}
+
+	// background
 	let unit_direction = r.direction().unit_vector();
 	let t = 0.5 * (unit_direction.y() + 1.0);
 	return (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0);
@@ -34,6 +41,7 @@ fn main() -> std::io::Result<()> {
 	let image_width = 400;
 	let image_height = (image_width as f64 / aspect_ratio) as i32;
 	let samples_per_pixel = 100;
+	let max_depth = 50;
 
 	let mut world = HittableList::new();
 	world.add(Rc::new(Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5)));
@@ -53,7 +61,7 @@ fn main() -> std::io::Result<()> {
 				let u = (i as f64 + rng.gen::<f64>()) / (image_width - 1) as f64;
 				let v = (j as f64 + rng.gen::<f64>()) / (image_height - 1) as f64;
 				let r = cam.get_ray(u, v);
-				pixel_color += ray_color(r, &world);
+				pixel_color += ray_color(&mut rng, r, &world, max_depth);
 			}
 			write_color(&mut std::io::stdout(), pixel_color, samples_per_pixel)?;
 		}

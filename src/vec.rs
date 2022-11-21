@@ -2,6 +2,8 @@ use std::ops::{
 	Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
 
+use rand::Rng;
+
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Vec3 {
 	e: [f64; 3],
@@ -50,6 +52,28 @@ impl Vec3 {
 
 	pub fn zero() -> Self {
 		Self::default()
+	}
+
+	pub fn random<R: Rng + ?Sized>(rng: &mut R) -> Self {
+		Self::new(rng.gen(), rng.gen(), rng.gen())
+	}
+
+	pub fn random_range<R: Rng + ?Sized>(rng: &mut R, min: f64, max: f64) -> Self {
+		Self::new(
+			rng.gen_range(min..max),
+			rng.gen_range(min..max),
+			rng.gen_range(min..max),
+		)
+	}
+
+	pub fn random_in_unit_sphere<R: Rng + ?Sized>(rng: &mut R) -> Self {
+		loop {
+			let v = Self::random_range(rng, -1.0, 1.0);
+			if v.length_squared() >= 1.0 {
+				continue;
+			}
+			return v;
+		}
 	}
 }
 
