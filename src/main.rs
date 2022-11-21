@@ -47,7 +47,6 @@ fn main() -> std::io::Result<()> {
 	let samples_per_pixel = 100;
 	let max_depth = 50;
 
-	let r = f64::cos(std::f64::consts::PI / 4.0);
 	let mut world = HittableList::new();
 
 	let material_ground = Rc::new(Lambertian {
