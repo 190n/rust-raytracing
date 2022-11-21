@@ -8,7 +8,7 @@ mod sphere;
 mod util;
 mod vec;
 
-use std::rc::Rc;
+use std::{io::BufWriter, io::Write, rc::Rc};
 
 use rand::Rng;
 
@@ -19,7 +19,7 @@ use hittable_list::HittableList;
 use material::{Dielectric, Lambertian, Metal};
 use ray::Ray;
 use sphere::Sphere;
-use vec::{Color, Point3, Vec3};
+use vec::{Color, Point3};
 
 fn ray_color(rng: &mut impl Rng, r: Ray, world: &dyn Hittable, depth: i32) -> Color {
 	if depth <= 0 {
@@ -91,7 +91,8 @@ fn main() -> std::io::Result<()> {
 
 	let mut rng = rand::thread_rng();
 
-	print!("P3\n{} {}\n255\n", image_width, image_height);
+	print!("P6\n{} {}\n255\n", image_width, image_height);
+	let mut buffered = BufWriter::new(std::io::stdout());
 
 	for j in (0..image_height).rev() {
 		eprint!("\rscanlines remaining: {} ", j);
@@ -103,9 +104,10 @@ fn main() -> std::io::Result<()> {
 				let r = cam.get_ray(u, v);
 				pixel_color += ray_color(&mut rng, r, &world, max_depth);
 			}
-			write_color(&mut std::io::stdout(), pixel_color, samples_per_pixel)?;
+			write_color(&mut buffered, pixel_color, samples_per_pixel)?;
 		}
 	}
 
+	buffered.flush()?;
 	Ok(())
 }

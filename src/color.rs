@@ -11,12 +11,10 @@ pub fn write_color(w: &mut impl Write, color: Color, samples_per_pixel: u32) -> 
 	g = (g * scale).sqrt();
 	b = (b * scale).sqrt();
 
-	writeln!(
-		w,
-		"{} {} {}",
-		(256.0 * r.clamp(0.0, 0.999)) as u8,
-		(256.0 * g.clamp(0.0, 0.999)) as u8,
-		(256.0 * b.clamp(0.0, 0.999)) as u8,
-	)?;
+	let r = (256.0 * r.clamp(0.0, 0.999)) as u8;
+	let g = (256.0 * g.clamp(0.0, 0.999)) as u8;
+	let b = (256.0 * b.clamp(0.0, 0.999)) as u8;
+
+	w.write(&[r, g, b])?;
 	Ok(())
 }
