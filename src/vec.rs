@@ -105,6 +105,16 @@ impl Vec3 {
 		let r_out_parallel = -f64::sqrt(f64::abs(1.0 - r_out_perp.length_squared())) * n;
 		r_out_perp + r_out_parallel
 	}
+
+	pub fn random_in_unit_disk<R: Rng + ?Sized>(rng: &mut R) -> Self {
+		loop {
+			let v = Self::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0), 0.0);
+			if v.length_squared() >= 1.0 {
+				continue;
+			}
+			return v;
+		}
+	}
 }
 
 impl Neg for Vec3 {

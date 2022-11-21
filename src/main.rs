@@ -19,7 +19,7 @@ use hittable_list::HittableList;
 use material::{Dielectric, Lambertian, Metal};
 use ray::Ray;
 use sphere::Sphere;
-use vec::{Color, Point3};
+use vec::{Color, Point3, Vec3};
 
 fn ray_color(rng: &mut impl Rng, r: Ray, world: &dyn Hittable, depth: i32) -> Color {
 	if depth <= 0 {
@@ -47,6 +47,7 @@ fn main() -> std::io::Result<()> {
 	let samples_per_pixel = 100;
 	let max_depth = 50;
 
+	let r = f64::cos(std::f64::consts::PI / 4.0);
 	let mut world = HittableList::new();
 
 	let material_ground = Rc::new(Lambertian {
@@ -87,7 +88,19 @@ fn main() -> std::io::Result<()> {
 		material_right,
 	)));
 
-	let cam = Camera::new();
+	let from = Point3::new(3.0, 3.0, 2.0);
+	let at = Point3::new(0.0, 0.0, -1.0);
+	let dist = (at - from).length();
+
+	let cam = Camera::new(
+		from,
+		at,
+		Vec3::new(0.0, 1.0, 0.0),
+		20.0,
+		aspect_ratio,
+		2.0,
+		dist,
+	);
 
 	let mut rng = rand::thread_rng();
 
@@ -101,7 +114,7 @@ fn main() -> std::io::Result<()> {
 			for _ in 0..samples_per_pixel {
 				let u = (i as f64 + rng.gen::<f64>()) / (image_width - 1) as f64;
 				let v = (j as f64 + rng.gen::<f64>()) / (image_height - 1) as f64;
-				let r = cam.get_ray(u, v);
+				let r = cam.get_ray(&mut rng, u, v);
 				pixel_color += ray_color(&mut rng, r, &world, max_depth);
 			}
 			write_color(&mut buffered, pixel_color, samples_per_pixel)?;
