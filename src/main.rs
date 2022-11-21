@@ -52,11 +52,13 @@ fn main() -> std::io::Result<()> {
 	let material_ground = Rc::new(Lambertian {
 		albedo: Color::new(0.8, 0.8, 0.0),
 	});
-	let material_center = Rc::new(Dielectric { ir: 1.5 });
+	let material_center = Rc::new(Lambertian {
+		albedo: Color::new(0.1, 0.2, 0.5),
+	});
 	let material_left = Rc::new(Dielectric { ir: 1.5 });
 	let material_right = Rc::new(Metal {
 		albedo: Color::new(0.8, 0.6, 0.2),
-		fuzz: 1.0,
+		fuzz: 0.0,
 	});
 
 	world.add(Rc::new(Sphere::new(
@@ -72,6 +74,11 @@ fn main() -> std::io::Result<()> {
 	world.add(Rc::new(Sphere::new(
 		Point3::new(-1.0, 0.0, -1.0),
 		0.5,
+		material_left.clone(),
+	)));
+	world.add(Rc::new(Sphere::new(
+		Point3::new(-1.0, 0.0, -1.0),
+		-0.4,
 		material_left,
 	)));
 	world.add(Rc::new(Sphere::new(
