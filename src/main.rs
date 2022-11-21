@@ -26,7 +26,7 @@ fn ray_color<R: Rng + ?Sized>(rng: &mut R, r: Ray, world: &dyn Hittable, depth: 
 	}
 
 	if let Some(rec) = world.hit(r, 0.001, f64::INFINITY) {
-		let target = rec.p + rec.normal + Vec3::random_in_unit_sphere(rng);
+		let target = rec.p + rec.normal + Vec3::random_unit_vector(rng);
 		return 0.5 * ray_color(rng, Ray::new(rec.p, target - rec.p), world, depth - 1);
 	}
 

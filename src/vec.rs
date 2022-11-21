@@ -75,6 +75,10 @@ impl Vec3 {
 			return v;
 		}
 	}
+
+	pub fn random_unit_vector<R: Rng + ?Sized>(rng: &mut R) -> Self {
+		Self::random_in_unit_sphere(rng).unit_vector()
+	}
 }
 
 impl Neg for Vec3 {
