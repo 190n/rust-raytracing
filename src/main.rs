@@ -20,14 +20,30 @@ use vec::{Color, Point3, Vec3};
 
 use hittable_list::HittableList;
 
-fn ray_color<R: Rng + ?Sized>(rng: &mut R, r: Ray, world: &dyn Hittable, depth: i32) -> Color {
+enum DiffuseMethod {
+	Lambertian,
+	HemisphericalScattering,
+}
+
+fn ray_color<R: Rng + ?Sized>(
+	rng: &mut R,
+	r: Ray,
+	world: &dyn Hittable,
+	depth: i32,
+	dm: DiffuseMethod,
+) -> Color {
 	if depth <= 0 {
 		return Color::zero();
 	}
 
 	if let Some(rec) = world.hit(r, 0.001, f64::INFINITY) {
-		let target = rec.p + rec.normal + Vec3::random_unit_vector(rng);
-		return 0.5 * ray_color(rng, Ray::new(rec.p, target - rec.p), world, depth - 1);
+		let target = match dm {
+			DiffuseMethod::Lambertian => rec.p + rec.normal + Vec3::random_unit_vector(rng),
+			DiffuseMethod::HemisphericalScattering => {
+				rec.p + Vec3::random_in_hemisphere(rng, rec.normal)
+			},
+		};
+		return 0.5 * ray_color(rng, Ray::new(rec.p, target - rec.p), world, depth - 1, dm);
 	}
 
 	// background
@@ -61,7 +77,7 @@ fn main() -> std::io::Result<()> {
 				let u = (i as f64 + rng.gen::<f64>()) / (image_width - 1) as f64;
 				let v = (j as f64 + rng.gen::<f64>()) / (image_height - 1) as f64;
 				let r = cam.get_ray(u, v);
-				pixel_color += ray_color(&mut rng, r, &world, max_depth);
+				pixel_color += ray_color(&mut rng, r, &world, max_depth, DiffuseMethod::Lambertian);
 			}
 			write_color(&mut std::io::stdout(), pixel_color, samples_per_pixel)?;
 		}

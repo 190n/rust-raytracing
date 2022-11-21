@@ -79,6 +79,16 @@ impl Vec3 {
 	pub fn random_unit_vector<R: Rng + ?Sized>(rng: &mut R) -> Self {
 		Self::random_in_unit_sphere(rng).unit_vector()
 	}
+
+	pub fn random_in_hemisphere<R: Rng + ?Sized>(rng: &mut R, normal: Self) -> Self {
+		let in_unit_sphere = Self::random_in_unit_sphere(rng);
+		if Self::dot(in_unit_sphere, normal) > 0.00 {
+			// same hemisphere
+			in_unit_sphere
+		} else {
+			-in_unit_sphere
+		}
+	}
 }
 
 impl Neg for Vec3 {
