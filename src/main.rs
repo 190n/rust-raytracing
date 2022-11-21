@@ -16,10 +16,75 @@ use camera::Camera;
 use color::write_color;
 use hittable::Hittable;
 use hittable_list::HittableList;
-use material::{Dielectric, Lambertian, Metal};
+use material::{Dielectric, Lambertian, Material, Metal};
 use ray::Ray;
 use sphere::Sphere;
 use vec::{Color, Point3, Vec3};
+
+fn random_scene<R: Rng + ?Sized>(rng: &mut R) -> HittableList {
+	let mut world = HittableList::new();
+
+	let ground_material = Rc::new(Lambertian {
+		albedo: Color::new(0.5, 0.5, 0.5),
+	});
+	world.add(Rc::new(Sphere::new(
+		Point3::new(0.0, -1000.0, 0.0),
+		1000.0,
+		ground_material,
+	)));
+
+	for a in -11..11 {
+		for b in -11..11 {
+			let choose_mat = rng.gen::<f64>();
+			let center = Point3::new(
+				a as f64 + 0.9 * rng.gen::<f64>(),
+				0.2,
+				b as f64 + 0.9 * rng.gen::<f64>(),
+			);
+
+			if (center - Point3::new(4.0, 0.2, 0.0)).length_squared() > 0.81 {
+				let sphere_material: Rc<dyn Material>;
+				if choose_mat < 0.8 {
+					let albedo = Color::random(rng) * Color::random(rng);
+					sphere_material = Rc::new(Lambertian { albedo });
+				} else if choose_mat < 0.95 {
+					let albedo = Color::random_range(rng, 0.5, 1.0);
+					let fuzz = rng.gen_range(0.0..0.5);
+					sphere_material = Rc::new(Metal { albedo, fuzz });
+				} else {
+					sphere_material = Rc::new(Dielectric { ir: 1.5 });
+				}
+				world.add(Rc::new(Sphere::new(center, 0.2, sphere_material)));
+			}
+		}
+	}
+
+	let material1 = Rc::new(Dielectric { ir: 1.5 });
+	world.add(Rc::new(Sphere::new(
+		Point3::new(0.0, 1.0, 0.0),
+		1.0,
+		material1,
+	)));
+	let material2 = Rc::new(Lambertian {
+		albedo: Color::new(0.4, 0.2, 0.1),
+	});
+	world.add(Rc::new(Sphere::new(
+		Point3::new(-4.0, 1.0, 0.0),
+		1.0,
+		material2,
+	)));
+	let material3 = Rc::new(Metal {
+		albedo: Color::new(0.7, 0.6, 0.5),
+		fuzz: 0.0,
+	});
+	world.add(Rc::new(Sphere::new(
+		Point3::new(4.0, 1.0, 0.0),
+		1.0,
+		material3,
+	)));
+
+	world
+}
 
 fn ray_color(rng: &mut impl Rng, r: Ray, world: &dyn Hittable, depth: i32) -> Color {
 	if depth <= 0 {
@@ -41,55 +106,20 @@ fn ray_color(rng: &mut impl Rng, r: Ray, world: &dyn Hittable, depth: i32) -> Co
 }
 
 fn main() -> std::io::Result<()> {
-	let aspect_ratio = 16.0 / 9.0;
-	let image_width = 400;
+	let aspect_ratio = 3.0 / 2.0;
+	let image_width = 300;
 	let image_height = (image_width as f64 / aspect_ratio) as i32;
-	let samples_per_pixel = 100;
+	let samples_per_pixel = 50;
 	let max_depth = 50;
 
-	let mut world = HittableList::new();
+	let mut rng = rand::thread_rng();
 
-	let material_ground = Rc::new(Lambertian {
-		albedo: Color::new(0.8, 0.8, 0.0),
-	});
-	let material_center = Rc::new(Lambertian {
-		albedo: Color::new(0.1, 0.2, 0.5),
-	});
-	let material_left = Rc::new(Dielectric { ir: 1.5 });
-	let material_right = Rc::new(Metal {
-		albedo: Color::new(0.8, 0.6, 0.2),
-		fuzz: 0.0,
-	});
+	let world = random_scene(&mut rng);
 
-	world.add(Rc::new(Sphere::new(
-		Point3::new(0.0, -100.5, -1.0),
-		100.0,
-		material_ground,
-	)));
-	world.add(Rc::new(Sphere::new(
-		Point3::new(0.0, 0.0, -1.0),
-		0.5,
-		material_center,
-	)));
-	world.add(Rc::new(Sphere::new(
-		Point3::new(-1.0, 0.0, -1.0),
-		0.5,
-		material_left.clone(),
-	)));
-	world.add(Rc::new(Sphere::new(
-		Point3::new(-1.0, 0.0, -1.0),
-		-0.4,
-		material_left,
-	)));
-	world.add(Rc::new(Sphere::new(
-		Point3::new(1.0, 0.0, -1.0),
-		0.5,
-		material_right,
-	)));
-
-	let from = Point3::new(3.0, 3.0, 2.0);
-	let at = Point3::new(0.0, 0.0, -1.0);
-	let dist = (at - from).length();
+	let from = Point3::new(13.0, 2.0, 3.0);
+	let at = Point3::zero();
+	let dist = 10.0;
+	let aperture = 0.1;
 
 	let cam = Camera::new(
 		from,
@@ -97,11 +127,9 @@ fn main() -> std::io::Result<()> {
 		Vec3::new(0.0, 1.0, 0.0),
 		20.0,
 		aspect_ratio,
-		2.0,
+		aperture,
 		dist,
 	);
-
-	let mut rng = rand::thread_rng();
 
 	print!("P6\n{} {}\n255\n", image_width, image_height);
 	let mut buffered = BufWriter::new(std::io::stdout());
