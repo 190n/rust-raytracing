@@ -1,5 +1,6 @@
-use std::ops::{
-	Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
+use std::{
+	iter::Sum,
+	ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
 use rand::Rng;
@@ -224,6 +225,12 @@ impl Div<f64> for Vec3 {
 		let mut output = self;
 		output /= rhs;
 		output
+	}
+}
+
+impl Sum for Vec3 {
+	fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+		iter.reduce(|a, b| a + b).unwrap_or_default()
 	}
 }
 

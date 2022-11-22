@@ -4,6 +4,7 @@ use crate::ray::Ray;
 use crate::util::degrees_to_radians;
 use crate::vec::{Point3, Vec3};
 
+#[derive(Clone, Copy)]
 pub struct Camera {
 	origin: Point3,
 	lower_left_corner: Point3,
