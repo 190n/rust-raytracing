@@ -1,3 +1,4 @@
+mod args;
 mod camera;
 mod color;
 mod hittable;
@@ -10,7 +11,7 @@ mod sphere;
 mod util;
 mod vec;
 
-use std::{io::BufWriter, io::Write, sync::Arc, sync::Mutex, thread};
+use std::{fs::File, io::BufWriter, io::Write, sync::Arc, sync::Mutex, thread};
 
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256PlusPlus;
@@ -22,13 +23,30 @@ use scene::random_scene;
 use vec::{Color, Point3, Vec3};
 
 fn main() -> std::io::Result<()> {
-	let aspect_ratio = 3.0 / 2.0;
-	let image_width = 300usize;
-	let image_height = (image_width as f64 / aspect_ratio) as usize;
-	let samples_per_pixel = 50usize;
-	let max_depth = 50usize;
+	let a = args::parse().unwrap_or_else(|e| {
+		eprintln!("{}", e);
+		args::show_help();
+		std::process::exit(1);
+	});
 
-	let mut rng = Xoshiro256PlusPlus::from_seed([5; 32]);
+	let aspect_ratio = 3.0 / 2.0;
+	let image_width = a.width;
+	let image_height = (image_width as f64 / aspect_ratio) as usize;
+	let samples_per_pixel = a.samples;
+	let max_depth = a.depth;
+
+	// use 64 bits of seed; rest are zeroed
+	let mut seed = [0u8; 32];
+	for (i, &b) in a.seed.to_le_bytes().iter().enumerate() {
+		seed[i] = b;
+	}
+	let mut rng = Xoshiro256PlusPlus::from_seed(seed);
+
+	let mut buffered: BufWriter<Box<dyn std::io::Write>> = if let Some(filename) = a.output {
+		BufWriter::new(Box::new(File::create(filename)?))
+	} else {
+		BufWriter::new(Box::new(std::io::stdout()))
+	};
 
 	let world = Arc::new(random_scene(&mut rng));
 
@@ -98,8 +116,7 @@ fn main() -> std::io::Result<()> {
 
 	let output: Vec<Vec<Color>> = handles.into_iter().map(|h| h.join().unwrap()).collect();
 
-	print!("P6\n{} {}\n255\n", image_width, image_height);
-	let mut buffered = BufWriter::new(std::io::stdout());
+	write!(buffered, "P6\n{} {}\n255\n", image_width, image_height)?;
 
 	for i in 0..(image_width * image_height) {
 		let color = output.iter().map(|v| v[i]).sum();
