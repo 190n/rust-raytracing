@@ -34,6 +34,7 @@ fn main() -> std::io::Result<()> {
 	let image_height = (image_width as f64 / aspect_ratio) as usize;
 	let samples_per_pixel = a.samples;
 	let max_depth = a.depth;
+	let num_threads = a.threads;
 
 	// use 64 bits of seed; rest are zeroed
 	let mut seed = [0u8; 32];
@@ -65,7 +66,6 @@ fn main() -> std::io::Result<()> {
 		dist,
 	);
 
-	let num_threads = 8usize;
 	let images =
 		vec![Vec::<Color>::with_capacity(image_width * image_height); num_threads as usize]
 			.into_iter()

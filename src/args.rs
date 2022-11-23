@@ -15,7 +15,7 @@ const HELP: &'static str = concat!(
 	"usage: {bin} [-t|--threads n] [-w|--width w] [-s|--samples s]\n",
 	"          [-r|--seed r] [-o|--output filename]\n",
 	"\n",
-	"  -t, --threads n:       number of threads. default: number of logical processors\n",
+	"  -t, --threads n:       number of threads. default: number of logical processors ({threads})\n",
 	"  -w, --width w:         width of image in pixels. default: 600\n",
 	"  -s, --samples s:       number of samples per pixel. default: 100\n",
 	"  -d, --depth d:         maximum bounces per ray. default: 50\n",
@@ -44,6 +44,12 @@ impl From<pico_args::Error> for Error {
 	}
 }
 
+fn system_threads() -> usize {
+	std::thread::available_parallelism()
+		.unwrap_or(1.try_into().unwrap())
+		.get()
+}
+
 pub fn show_help() {
 	eprint!(
 		"{}",
@@ -51,6 +57,7 @@ pub fn show_help() {
 			"{bin}",
 			&std::env::args_os().nth(0).unwrap().into_string().unwrap()
 		)
+		.replace("{threads}", &system_threads().to_string())
 	);
 }
 
@@ -62,11 +69,9 @@ pub fn parse() -> Result<Args, Error> {
 	}
 
 	let args = Args {
-		threads: pargs.opt_value_from_str(["-t", "--threads"])?.unwrap_or(
-			std::thread::available_parallelism()
-				.unwrap_or(1.try_into().unwrap())
-				.get(),
-		),
+		threads: pargs
+			.opt_value_from_str(["-t", "--threads"])?
+			.unwrap_or(system_threads()),
 		width: pargs.opt_value_from_str(["-w", "--width"])?.unwrap_or(600),
 		samples: pargs
 			.opt_value_from_str(["-s", "--samples"])?
