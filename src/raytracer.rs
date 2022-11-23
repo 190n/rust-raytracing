@@ -50,10 +50,7 @@ pub fn render(
 		}
 		if let Some(total_lines) = log {
 			let c = counter.lock().unwrap().clone();
-			eprint!(
-				"\rprogress: {:5>.2}%",
-				c as f64 / total_lines as f64 * 100.0
-			);
+			eprint!("\rprogress: {:5.2}%", c as f64 / total_lines as f64 * 100.0);
 		}
 		for i in 0..width {
 			let mut pixel_color = Color::zero();
