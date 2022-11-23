@@ -1,7 +1,7 @@
 use crate::vec::Color;
 use std::io::{self, Write};
 
-pub fn write_color(w: &mut impl Write, color: Color, samples_per_pixel: u32) -> io::Result<()> {
+pub fn write_color(w: &mut impl Write, color: Color, samples_per_pixel: usize) -> io::Result<()> {
 	let mut r = color.x();
 	let mut g = color.y();
 	let mut b = color.z();

@@ -2,3 +2,4 @@
 *.ppm
 perf.data*
 flamegraph.svg
+.vscode
