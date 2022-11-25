@@ -1,7 +1,6 @@
 use rand::Rng;
 
 use crate::ray::Ray;
-use crate::util::degrees_to_radians;
 use crate::vec::{Point3, Vec3};
 
 #[derive(Clone, Copy)]
@@ -13,6 +12,10 @@ pub struct Camera {
 	u: Vec3,
 	v: Vec3,
 	lens_radius: f64,
+}
+
+fn degrees_to_radians(degrees: f64) -> f64 {
+	degrees * std::f64::consts::PI / 180.0
 }
 
 impl Camera {

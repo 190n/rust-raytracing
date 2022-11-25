@@ -1,5 +1,8 @@
 use std::ffi::OsString;
 use std::fmt::{self, Display, Formatter};
+use std::str::FromStr;
+
+use getrandom::getrandom;
 
 #[derive(Debug)]
 pub struct Args {
@@ -9,19 +12,27 @@ pub struct Args {
 	pub depth: usize,
 	pub seed: u64,
 	pub output: Option<String>,
+	pub scene: WhichScene,
 }
 
-const HELP: &'static str = concat!(
-	"usage: {bin} [-t|--threads n] [-w|--width w] [-s|--samples s]\n",
-	"          [-r|--seed r] [-o|--output filename]\n",
-	"\n",
-	"  -t, --threads n:       number of threads. default: number of logical processors ({threads})\n",
-	"  -w, --width w:         width of image in pixels. default: 600\n",
-	"  -s, --samples s:       number of samples per pixel. default: 100\n",
-	"  -d, --depth d:         maximum bounces per ray. default: 50\n",
-	"  -r, --seed r:          random number seed. default: entropy from the OS\n",
-	"  -o, --output filename: file to output PPM image to. default: stdout\n",
-);
+#[derive(Debug)]
+pub enum WhichScene {
+	Random,
+	Figure19,
+	Refraction,
+}
+
+impl FromStr for WhichScene {
+	type Err = String;
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"random" => Ok(Self::Random),
+			"figure19" => Ok(Self::Figure19),
+			"refraction" => Ok(Self::Refraction),
+			_ => Err(format!("unknown scene: {}", s)),
+		}
+	}
+}
 
 pub enum Error {
 	PicoError(pico_args::Error),
@@ -52,12 +63,31 @@ fn system_threads() -> usize {
 
 pub fn show_help() {
 	eprint!(
-		"{}",
-		HELP.replace(
-			"{bin}",
-			&std::env::args_os().nth(0).unwrap().into_string().unwrap()
-		)
-		.replace("{threads}", &system_threads().to_string())
+		concat!(
+			"usage: {} [-t|--threads n] [-w|--width w] [-s|--samples s] [-r|--seed r] \n",
+			"         [-d|--depth d] [-o|--output filename] [-S|--scene scene]\n",
+			"\n",
+			"  -t, --threads n:       number of threads. default: number of logical processors ({})\n",
+			"  -w, --width w:         width of image in pixels. default: 600\n",
+			"  -s, --samples s:       number of samples per pixel. default: 100\n",
+			"  -d, --depth d:         maximum bounces per ray. default: 50\n",
+			"  -r, --seed r:          random number seed. default: entropy from the OS\n",
+			"  -o, --output filename: file to output PPM image to. default: stdout\n",
+			"  -S, --scene scene:     which scene to render. options:\n",
+			"    random:\n",
+			"      random spheres; final render from Ray Tracing in One Weekend\n",
+			"    figure19:\n",
+			"      figure 19 from Ray Tracing in One Weekend; three spheres with different materials\n",
+			"    refraction:\n",
+			"      a series of spheres lowering into a refractive material\n",
+			"    default: random\n",
+		),
+		std::env::args_os()
+			.nth(0)
+			.unwrap_or_else(|| "raytracing".into())
+			.into_string()
+			.unwrap_or_else(|_| "raytracing".into()),
+		system_threads()
 	);
 }
 
@@ -67,6 +97,8 @@ pub fn parse() -> Result<Args, Error> {
 		show_help();
 		std::process::exit(0);
 	}
+
+	let mut did_get_seed_from_os = false;
 
 	let args = Args {
 		threads: pargs
@@ -81,13 +113,16 @@ pub fn parse() -> Result<Args, Error> {
 			.opt_value_from_str(["-r", "--seed"])?
 			.unwrap_or_else(|| {
 				let mut buf = [0u8; 8];
-				getrandom::getrandom(&mut buf).unwrap();
+				getrandom(&mut buf).unwrap();
 				let seed = u64::from_le_bytes(buf);
-				// print out the seed so that users can keep using a seed they like
-				eprintln!("using seed: {}", seed);
+				// we will print out the seed so that users can keep using a seed they like
+				did_get_seed_from_os = true;
 				seed
 			}),
 		output: pargs.opt_value_from_str(["-o", "--output"])?,
+		scene: pargs
+			.opt_value_from_str(["-S", "--scene"])?
+			.unwrap_or(WhichScene::Random),
 	};
 
 	if args.threads == 0 {
@@ -112,6 +147,10 @@ pub fn parse() -> Result<Args, Error> {
 	let rest = pargs.finish();
 	if !rest.is_empty() {
 		return Err(Error::UnrecognizedArguments(rest));
+	}
+
+	if did_get_seed_from_os {
+		eprintln!("using seed: {}", args.seed);
 	}
 
 	Ok(args)

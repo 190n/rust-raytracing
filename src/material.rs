@@ -66,6 +66,7 @@ impl Material for Metal {
 pub struct Dielectric {
 	/// index of refraction
 	pub ir: f64,
+	pub color: Color,
 }
 
 impl Dielectric {
@@ -98,7 +99,7 @@ impl Material for Dielectric {
 		};
 
 		Some(ScatterResult {
-			attenuation: Color::new(1.0, 1.0, 1.0),
+			attenuation: self.color,
 			scattered: Ray::new(rec.p, direction),
 		})
 	}

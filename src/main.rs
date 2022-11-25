@@ -8,69 +8,57 @@ mod ray;
 mod raytracer;
 mod scene;
 mod sphere;
-mod util;
 mod vec;
 
-use std::{fs::File, io::BufWriter, io::Write, sync::Arc, sync::Mutex, thread};
+use std::io::{self, BufWriter, Write};
+use std::{fs::File, sync::Arc, sync::Mutex, thread};
 
+use args::WhichScene;
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256PlusPlus;
 
-use camera::Camera;
 use color::write_color;
 use raytracer::render;
-use scene::random_scene;
-use vec::{Color, Point3, Vec3};
+use vec::Color;
 
-fn main() -> std::io::Result<()> {
-	let a = args::parse().unwrap_or_else(|e| {
+fn main() -> io::Result<()> {
+	let args = args::parse().unwrap_or_else(|e| {
 		eprintln!("{}", e);
 		args::show_help();
 		std::process::exit(1);
 	});
 
 	let aspect_ratio = 3.0 / 2.0;
-	let image_width = a.width;
+	let image_width = args.width;
 	let image_height = (image_width as f64 / aspect_ratio) as usize;
-	let samples_per_pixel = a.samples;
-	let max_depth = a.depth;
-	let num_threads = a.threads;
+	let samples_per_pixel = args.samples;
+	let max_depth = args.depth;
+	let num_threads = args.threads;
 
 	// use 64 bits of seed; rest are zeroed
 	let mut seed = [0u8; 32];
-	for (i, &b) in a.seed.to_le_bytes().iter().enumerate() {
+	for (i, &b) in args.seed.to_le_bytes().iter().enumerate() {
 		seed[i] = b;
 	}
 	let mut rng = Xoshiro256PlusPlus::from_seed(seed);
 
-	let mut buffered: BufWriter<Box<dyn std::io::Write>> = if let Some(filename) = a.output {
+	let mut buffered: BufWriter<Box<dyn Write>> = if let Some(filename) = args.output {
 		BufWriter::new(Box::new(File::create(filename)?))
 	} else {
-		BufWriter::new(Box::new(std::io::stdout()))
+		BufWriter::new(Box::new(io::stdout()))
 	};
 
-	let world = Arc::new(random_scene(&mut rng));
+	let (world, cam) = match args.scene {
+		WhichScene::Random => scene::random_scene(&mut rng),
+		WhichScene::Figure19 => scene::figure19_scene(),
+		WhichScene::Refraction => scene::refraction_scene(),
+	};
+	let world = Arc::new(world);
 
-	let from = Point3::new(13.0, 2.0, 3.0);
-	let at = Point3::zero();
-	let dist = 10.0;
-	let aperture = 0.1;
-
-	let cam = Camera::new(
-		from,
-		at,
-		Vec3::new(0.0, 1.0, 0.0),
-		20.0,
-		aspect_ratio,
-		aperture,
-		dist,
-	);
-
-	let images =
-		vec![Vec::<Color>::with_capacity(image_width * image_height); num_threads as usize]
-			.into_iter()
-			.enumerate();
-	let mut handles = Vec::<thread::JoinHandle<Vec<Color>>>::with_capacity(num_threads as usize);
+	let images = vec![Vec::<Color>::with_capacity(image_width * image_height); num_threads]
+		.into_iter()
+		.enumerate();
+	let mut handles = Vec::<thread::JoinHandle<Vec<Color>>>::with_capacity(num_threads);
 	let counter = Arc::new(Mutex::new(0usize));
 	let mut logger_assigned = false;
 
@@ -104,7 +92,7 @@ fn main() -> std::io::Result<()> {
 				samples,
 				max_depth,
 				if will_log {
-					Some(num_threads as usize * image_height)
+					Some(num_threads * image_height)
 				} else {
 					None
 				},
@@ -118,6 +106,7 @@ fn main() -> std::io::Result<()> {
 
 	write!(buffered, "P6\n{} {}\n255\n", image_width, image_height)?;
 
+	// for each pixel, sum every thread's samples
 	for i in 0..(image_width * image_height) {
 		let color = output.iter().map(|v| v[i]).sum();
 		write_color(&mut buffered, color, samples_per_pixel)?;
