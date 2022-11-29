@@ -1,3 +1,4 @@
+mod aabb;
 mod args;
 mod camera;
 mod color;
