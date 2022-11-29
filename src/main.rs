@@ -13,10 +13,10 @@ mod vec;
 use std::io::{self, BufWriter, Write};
 use std::{fs::File, sync::Arc, sync::Mutex, thread};
 
-use args::WhichScene;
-use rand::SeedableRng;
+use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
 
+use args::WhichScene;
 use color::write_color;
 use raytracer::render;
 use vec::Color;
@@ -68,7 +68,7 @@ fn main() -> io::Result<()> {
 		let samples =
 			(i + 1) * samples_per_pixel / num_threads - i * samples_per_pixel / num_threads;
 		let w = world.clone();
-		let mut r = rng.clone();
+		let mut thread_rng = Xoshiro256PlusPlus::from_seed(rng.gen());
 		let c = counter.clone();
 		// ceiling division, to ensure that the logger thread is one of the threads that processes
 		// more samples
@@ -85,7 +85,7 @@ fn main() -> io::Result<()> {
 		handles.push(thread::spawn(move || {
 			render(
 				&mut buf,
-				&mut r,
+				&mut thread_rng,
 				w,
 				cam,
 				(image_width, image_height),
