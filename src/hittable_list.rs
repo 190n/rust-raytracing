@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::aabb::Aabb;
 use crate::hittable::{HitRecord, Hittable};
 use crate::ray::Ray;
 
@@ -32,5 +33,32 @@ impl Hittable for HittableList {
 		}
 
 		temp_rec
+	}
+
+	fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
+		if self.objects.is_empty() {
+			return None;
+		}
+
+		let mut temp_box: Option<Aabb> = None;
+		for o in &self.objects {
+			if let Some(bb) = o.bounding_box(time0, time1) {
+				temp_box = if let Some(bb2) = temp_box {
+					Some(Aabb::surrounding_box(bb, bb2))
+				} else {
+					Some(bb)
+				};
+			} else {
+				return None;
+			}
+		}
+
+		temp_box
+	}
+}
+
+impl AsRef<[Arc<dyn Hittable>]> for HittableList {
+	fn as_ref(&self) -> &[Arc<dyn Hittable>] {
+		&self.objects
 	}
 }

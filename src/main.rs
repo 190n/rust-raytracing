@@ -1,5 +1,6 @@
 mod aabb;
 mod args;
+mod bvh;
 mod camera;
 mod color;
 mod hittable;
@@ -18,6 +19,7 @@ use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
 
 use args::WhichScene;
+use bvh::BvhNode;
 use color::write_color;
 use raytracer::render;
 use vec::Color;
@@ -54,7 +56,12 @@ fn main() -> io::Result<()> {
 		WhichScene::Figure19 => scene::figure19_scene(),
 		WhichScene::Refraction => scene::refraction_scene(),
 	};
-	let world = Arc::new(world);
+	let world = Arc::new(
+		BvhNode::new(&mut rng, world.as_ref(), 0.0, 0.0).unwrap_or_else(|e| {
+			eprintln!("error constructing BVH: {:?}", e);
+			std::process::exit(1);
+		}),
+	);
 
 	let images = vec![Vec::<Color>::with_capacity(image_width * image_height); num_threads]
 		.into_iter()
