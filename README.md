@@ -20,6 +20,8 @@ My implementation of [_Ray Tracing in One Weekend_](https://raytracing.github.io
 
 ## Usage
 
+With Rust and Cargo installed, you can use `cargo run --release` to run with the default settings (including output to stdout), or `cargo run --release -- <ARGS>` to run with different arguments. Or after compiling it (one of the `run` commands or `cargo build --release`), you can run the executable in `./target/release` directly without using `cargo`.
+
 ```
 usage: raytracing [-t|--threads n] [-w|--width w] [-s|--samples s] [-r|--seed r] 
          [-d|--depth d] [-o|--output filename] [-S|--scene scene]
