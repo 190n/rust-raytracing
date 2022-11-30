@@ -99,6 +99,11 @@ impl Hittable for BvhNode {
 		if !self.bbox.hit(r, t_min, t_max) {
 			None
 		} else {
+			// check if left and right are the same node; if so, we don't need to check them both
+			if Arc::ptr_eq(&self.left, &self.right) {
+				return self.left.hit(r, t_min, t_max);
+			}
+
 			let hit_left = self.left.hit(r, t_min, t_max);
 			let hit_right = self.right.hit(
 				r,
