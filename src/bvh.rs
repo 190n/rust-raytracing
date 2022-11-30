@@ -38,6 +38,7 @@ fn box_z_compare(a: &dyn Hittable, b: &dyn Hittable) -> Result<Ordering, BvhCons
 	box_compare(a, b, 2)
 }
 
+#[derive(Debug)]
 pub struct BvhNode {
 	left: Arc<dyn Hittable>,
 	right: Arc<dyn Hittable>,

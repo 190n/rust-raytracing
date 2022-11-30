@@ -4,6 +4,7 @@ use crate::aabb::Aabb;
 use crate::hittable::{HitRecord, Hittable};
 use crate::ray::Ray;
 
+#[derive(Debug)]
 pub struct HittableList {
 	objects: Vec<Arc<dyn Hittable>>,
 }

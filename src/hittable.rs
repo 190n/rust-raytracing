@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::aabb::Aabb;
@@ -25,7 +26,7 @@ impl HitRecord {
 	}
 }
 
-pub trait Hittable: Sync + Send {
+pub trait Hittable: Sync + Send + Debug {
 	fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
 	fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb>;
 }

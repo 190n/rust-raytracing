@@ -1,7 +1,7 @@
 use crate::ray::Ray;
 use crate::vec::Point3;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Aabb {
 	minimum: Point3,
 	maximum: Point3,
