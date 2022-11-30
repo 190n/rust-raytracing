@@ -42,3 +42,19 @@ usage: raytracing [-t|--threads n] [-w|--width w] [-s|--samples s] [-r|--seed r]
       a series of spheres lowering into a refractive material
     default: random
 ```
+
+## Samples
+
+Each generated with `-w 1200 -s 500`, and then converted from PPM into lossless WebP.
+
+### [Random spheres](https://raytracing.github.io/books/RayTracingInOneWeekend.html#wherenext?/afinalrender) (seed: `31368665636066006`)
+
+![](samples/random.webp)
+
+### [Figure 19](https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera/positioningandorientingthecamera)
+
+![](samples/figure19.webp)
+
+### Refraction demo
+
+![](samples/refraction.webp)
