@@ -16,6 +16,8 @@ My implementation of [_Ray Tracing in One Weekend_](https://raytracing.github.io
 - [ ] instances
 - [ ] volumes
 - [ ] final scene from _The Next Week_
+- [ ] color management
+- [ ] pride flag materials
 - [ ] PNG output?
 - [ ] mesh geometry?
 
