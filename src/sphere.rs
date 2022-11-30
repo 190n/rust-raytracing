@@ -58,9 +58,10 @@ impl Hittable for Sphere {
 	}
 
 	fn bounding_box(&self, _time0: f64, _time1: f64) -> Option<Aabb> {
+		let radius = self.radius.abs();
 		Some(Aabb::new(
-			self.center - Vec3::new(self.radius, self.radius, self.radius),
-			self.center + Vec3::new(self.radius, self.radius, self.radius),
+			self.center - Vec3::new(radius, radius, radius),
+			self.center + Vec3::new(radius, radius, radius),
 		))
 	}
 }
