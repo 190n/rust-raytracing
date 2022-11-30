@@ -37,6 +37,7 @@ impl FromStr for WhichScene {
 pub enum Error {
 	PicoError(pico_args::Error),
 	UnrecognizedArguments(Vec<OsString>),
+	GetrandomError(getrandom::Error),
 }
 
 impl Display for Error {
@@ -44,6 +45,7 @@ impl Display for Error {
 		match self {
 			Self::PicoError(e) => e.fmt(f)?,
 			Self::UnrecognizedArguments(v) => write!(f, "unrecognized argument(s): {:?}", v)?,
+			Self::GetrandomError(e) => write!(f, "error generating entropy: {}", e)?,
 		}
 		Ok(())
 	}
@@ -52,6 +54,12 @@ impl Display for Error {
 impl From<pico_args::Error> for Error {
 	fn from(value: pico_args::Error) -> Self {
 		Self::PicoError(value)
+	}
+}
+
+impl From<getrandom::Error> for Error {
+	fn from(value: getrandom::Error) -> Self {
+		Self::GetrandomError(value)
 	}
 }
 
@@ -111,14 +119,15 @@ pub fn parse() -> Result<Args, Error> {
 		depth: pargs.opt_value_from_str(["-d", "--depth"])?.unwrap_or(50),
 		seed: pargs
 			.opt_value_from_str(["-r", "--seed"])?
+			.map(|seed| Ok::<u64, getrandom::Error>(seed))
 			.unwrap_or_else(|| {
 				let mut buf = [0u8; 8];
-				getrandom(&mut buf).unwrap();
+				getrandom(&mut buf)?;
 				let seed = u64::from_le_bytes(buf);
 				// we will print out the seed so that users can keep using a seed they like
 				did_get_seed_from_os = true;
-				seed
-			}),
+				Ok(seed)
+			})?,
 		output: pargs.opt_value_from_str(["-o", "--output"])?,
 		scene: pargs
 			.opt_value_from_str(["-S", "--scene"])?
