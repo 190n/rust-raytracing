@@ -8,7 +8,9 @@ use crate::material::{Dielectric, Lambertian, Material, Metal};
 use crate::sphere::Sphere;
 use crate::vec::{Color, Point3, Vec3};
 
-pub fn figure19_scene() -> (HittableList, Camera) {
+pub type Scene = (f64, HittableList, Camera);
+
+pub fn figure19_scene() -> Scene {
 	let mut world = HittableList::new();
 	let glass = Arc::new(Dielectric {
 		ir: 1.5,
@@ -53,19 +55,23 @@ pub fn figure19_scene() -> (HittableList, Camera) {
 		}),
 	)));
 
+	let aspect = 16.0 / 9.0;
+
 	let cam = Camera::new(
 		Point3::new(-2.0, 2.0, 1.0),
 		Point3::new(0.0, 0.0, -1.0),
 		Vec3::new(0.0, 1.0, 0.0),
 		20.0,
-		3.0 / 2.0,
+		aspect,
 		0.0,
 		1.0,
+		0.0,
+		0.0,
 	);
-	(world, cam)
+	(aspect, world, cam)
 }
 
-pub fn refraction_scene() -> (HittableList, Camera) {
+pub fn refraction_scene() -> Scene {
 	let mut world = HittableList::new();
 	let ball_material = Arc::new(Lambertian {
 		albedo: Color::new(0.0, 0.6, 0.0),
@@ -88,19 +94,23 @@ pub fn refraction_scene() -> (HittableList, Camera) {
 		)));
 	}
 
+	let aspect = 2.0;
+
 	let cam = Camera::new(
 		Point3::new(-15.0, 3.0, 0.0),
 		Point3::zero(),
 		Vec3::new(0.0, 1.0, 0.0),
 		60.0,
-		3.0 / 2.0,
+		aspect,
 		0.0,
 		1.0,
+		0.0,
+		0.0,
 	);
-	(world, cam)
+	(aspect, world, cam)
 }
 
-pub fn random_scene<R: Rng + ?Sized>(rng: &mut R) -> (HittableList, Camera) {
+pub fn random_scene<R: Rng + ?Sized>(rng: &mut R) -> Scene {
 	let mut world = HittableList::new();
 
 	let ground_material = Arc::new(Lambertian {
@@ -173,16 +183,19 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R) -> (HittableList, Camera) {
 	let at = Point3::zero();
 	let dist = 10.0;
 	let aperture = 0.1;
+	let aspect = 3.0 / 2.0;
 
 	let cam = Camera::new(
 		from,
 		at,
 		Vec3::new(0.0, 1.0, 0.0),
 		20.0,
-		3.0 / 2.0,
+		aspect,
 		aperture,
 		dist,
+		0.0,
+		0.0,
 	);
 
-	(world, cam)
+	(aspect, world, cam)
 }

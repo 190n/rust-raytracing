@@ -12,6 +12,8 @@ pub struct Camera {
 	u: Vec3,
 	v: Vec3,
 	lens_radius: f64,
+	time0: f64,
+	time1: f64,
 }
 
 fn degrees_to_radians(degrees: f64) -> f64 {
@@ -28,6 +30,8 @@ impl Camera {
 		aspect_ratio: f64,
 		aperture: f64,
 		focus_dist: f64,
+		time0: f64,
+		time1: f64,
 	) -> Self {
 		let theta = degrees_to_radians(vfov);
 		let h = f64::tan(theta / 2.0);
@@ -51,6 +55,8 @@ impl Camera {
 			u,
 			v,
 			lens_radius: aperture / 2.0,
+			time0,
+			time1,
 		}
 	}
 
@@ -60,6 +66,7 @@ impl Camera {
 		Ray::new(
 			self.origin + offset,
 			self.lower_left_corner + s * self.horizontal + t * self.vertical - self.origin - offset,
+			rng.gen_range(self.time0..self.time1),
 		)
 	}
 }

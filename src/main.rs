@@ -6,6 +6,7 @@ mod color;
 mod hittable;
 mod hittable_list;
 mod material;
+mod moving_sphere;
 mod ray;
 mod raytracer;
 mod scene;
@@ -31,13 +32,6 @@ fn main() -> io::Result<()> {
 		std::process::exit(1);
 	});
 
-	let aspect_ratio = 3.0 / 2.0;
-	let image_width = args.width;
-	let image_height = (image_width as f64 / aspect_ratio) as usize;
-	let samples_per_pixel = args.samples;
-	let max_depth = args.depth;
-	let num_threads = args.threads;
-
 	// use 64 bits of seed; rest are zeroed
 	let mut seed = [0u8; 32];
 	for (i, &b) in args.seed.to_le_bytes().iter().enumerate() {
@@ -51,7 +45,7 @@ fn main() -> io::Result<()> {
 		BufWriter::new(Box::new(io::stdout()))
 	};
 
-	let (world, cam) = match args.scene {
+	let (aspect_ratio, world, cam) = match args.scene {
 		WhichScene::Random => scene::random_scene(&mut rng),
 		WhichScene::Figure19 => scene::figure19_scene(),
 		WhichScene::Refraction => scene::refraction_scene(),
@@ -62,6 +56,12 @@ fn main() -> io::Result<()> {
 			std::process::exit(1);
 		}),
 	);
+
+	let image_width = args.width;
+	let image_height = (image_width as f64 / aspect_ratio) as usize;
+	let samples_per_pixel = args.samples;
+	let max_depth = args.depth;
+	let num_threads = args.threads;
 
 	let images = vec![Vec::<Color>::with_capacity(image_width * image_height); num_threads]
 		.into_iter()
