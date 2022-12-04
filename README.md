@@ -9,8 +9,8 @@ My implementation of [_Ray Tracing in One Weekend_](https://raytracing.github.io
 - [x] multithreading
 - [x] argument parsing
 - [x] BVH
+- [x] motion blur
 - [ ] better multithreading (a queue of tiles instead of using fewer samples)
-- [ ] motion blur
 - [ ] textures (solid, noise, images)
 - [ ] rectangles and lights
 - [ ] instances
