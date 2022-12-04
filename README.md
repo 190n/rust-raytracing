@@ -38,6 +38,8 @@ usage: raytracing [-t|--threads n] [-w|--width w] [-s|--samples s] [-r|--seed r]
   -S, --scene scene:     which scene to render. options:
     random:
       random spheres; final render from Ray Tracing in One Weekend
+    random_moving:
+      random spheres, but some of them are moving; figure 1 from Ray Tracing: The Next Week
     figure19:
       figure 19 from Ray Tracing in One Weekend; three spheres with different materials
     refraction:
@@ -52,6 +54,10 @@ Each generated with `-w 1200 -s 500`, and then converted from PPM into lossless 
 ### [Random spheres](https://raytracing.github.io/books/RayTracingInOneWeekend.html#wherenext?/afinalrender) (seed: `31368665636066006`)
 
 ![](samples/random.webp)
+
+### [Random moving spheres](https://raytracing.github.io/books/RayTracingTheNextWeek.html#motionblur/puttingeverythingtogether) (seed: `12883212685894696376`)
+
+![](samples/random_moving.webp)
 
 ### [Figure 19](https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera/positioningandorientingthecamera)
 

@@ -5,6 +5,7 @@ use rand::Rng;
 use crate::camera::Camera;
 use crate::hittable_list::HittableList;
 use crate::material::{Dielectric, Lambertian, Material, Metal};
+use crate::moving_sphere::MovingSphere;
 use crate::sphere::Sphere;
 use crate::vec::{Color, Point3, Vec3};
 
@@ -66,7 +67,7 @@ pub fn figure19_scene() -> Scene {
 		0.0,
 		1.0,
 		0.0,
-		0.0,
+		1.0,
 	);
 	(aspect, world, cam)
 }
@@ -105,12 +106,12 @@ pub fn refraction_scene() -> Scene {
 		0.0,
 		1.0,
 		0.0,
-		0.0,
+		1.0,
 	);
 	(aspect, world, cam)
 }
 
-pub fn random_scene<R: Rng + ?Sized>(rng: &mut R) -> Scene {
+pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, moving: bool) -> Scene {
 	let mut world = HittableList::new();
 
 	let ground_material = Arc::new(Lambertian {
@@ -147,7 +148,20 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R) -> Scene {
 						color: Color::random_range(rng, 0.5, 1.0),
 					})
 				};
-				world.add(Arc::new(Sphere::new(center, 0.2, sphere_material)));
+
+				if moving && choose_mat < 0.8 {
+					let center2 = center + Vec3::new(0.0, rng.gen_range(0.0..0.5), 0.0);
+					world.add(Arc::new(MovingSphere::new(
+						center,
+						center2,
+						0.0,
+						1.0,
+						0.2,
+						sphere_material,
+					)))
+				} else {
+					world.add(Arc::new(Sphere::new(center, 0.2, sphere_material)));
+				}
 			}
 		}
 	}
@@ -194,7 +208,7 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R) -> Scene {
 		aperture,
 		dist,
 		0.0,
-		0.0,
+		1.0,
 	);
 
 	(aspect, world, cam)

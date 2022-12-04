@@ -18,6 +18,7 @@ pub struct Args {
 #[derive(Debug)]
 pub enum WhichScene {
 	Random,
+	RandomMoving,
 	Figure19,
 	Refraction,
 }
@@ -27,6 +28,7 @@ impl FromStr for WhichScene {
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			"random" => Ok(Self::Random),
+			"random_moving" => Ok(Self::RandomMoving),
 			"figure19" => Ok(Self::Figure19),
 			"refraction" => Ok(Self::Refraction),
 			_ => Err(format!("unknown scene: {}", s)),
@@ -84,6 +86,8 @@ pub fn show_help() {
 			"  -S, --scene scene:     which scene to render. options:\n",
 			"    random:\n",
 			"      random spheres; final render from Ray Tracing in One Weekend\n",
+			"    random_moving:\n",
+			"      random spheres, but some of them are moving; figure 1 from Ray Tracing: The Next Week\n",
 			"    figure19:\n",
 			"      figure 19 from Ray Tracing in One Weekend; three spheres with different materials\n",
 			"    refraction:\n",

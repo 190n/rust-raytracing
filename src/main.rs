@@ -46,12 +46,13 @@ fn main() -> io::Result<()> {
 	};
 
 	let (aspect_ratio, world, cam) = match args.scene {
-		WhichScene::Random => scene::random_scene(&mut rng),
+		WhichScene::Random => scene::random_scene(&mut rng, false),
+		WhichScene::RandomMoving => scene::random_scene(&mut rng, true),
 		WhichScene::Figure19 => scene::figure19_scene(),
 		WhichScene::Refraction => scene::refraction_scene(),
 	};
 	let world = Arc::new(
-		BvhNode::new(&mut rng, world.as_ref(), 0.0, 0.0).unwrap_or_else(|e| {
+		BvhNode::new(&mut rng, world.as_ref(), 0.0, 1.0).unwrap_or_else(|e| {
 			eprintln!("error constructing BVH: {:?}", e);
 			std::process::exit(1);
 		}),
