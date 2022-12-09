@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use rand::{Rng, RngCore};
 
 use super::HitRecord;
@@ -8,7 +10,7 @@ pub struct ScatterResult {
 	pub scattered: Ray,
 }
 
-pub trait Material: std::fmt::Debug + Sync + Send {
+pub trait Material: Debug + Sync + Send {
 	fn scatter(&self, rng: &mut dyn RngCore, r_in: &Ray, rec: &HitRecord) -> Option<ScatterResult>;
 }
 
