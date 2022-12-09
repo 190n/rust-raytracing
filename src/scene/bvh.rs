@@ -3,9 +3,9 @@ use std::sync::Arc;
 
 use rand::Rng;
 
-use crate::aabb::Aabb;
-use crate::hittable::{HitRecord, Hittable};
-use crate::ray::Ray;
+use crate::lib::Ray;
+use crate::object::{HitRecord, Hittable};
+use crate::scene::Aabb;
 
 #[derive(Debug)]
 pub enum BvhConstructionError {

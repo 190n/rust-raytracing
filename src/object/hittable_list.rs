@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use crate::aabb::Aabb;
-use crate::hittable::{HitRecord, Hittable};
-use crate::ray::Ray;
+use super::{hittable::HitRecord, Hittable};
+use crate::lib::Ray;
+use crate::scene::Aabb;
 
 #[derive(Debug)]
 pub struct HittableList {

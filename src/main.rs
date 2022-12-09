@@ -1,17 +1,6 @@
-mod aabb;
-mod args;
-mod bvh;
-mod camera;
-mod color;
-mod hittable;
-mod hittable_list;
-mod material;
-mod moving_sphere;
-mod ray;
-mod raytracer;
+mod lib;
+mod object;
 mod scene;
-mod sphere;
-mod vec;
 
 use std::io::{self, BufWriter, Write};
 use std::sync::{mpsc, Arc, Mutex};
@@ -21,11 +10,11 @@ use std::{fs::File, thread, thread::JoinHandle};
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
 
-use args::WhichScene;
-use bvh::BvhNode;
-use color::write_color;
-use raytracer::{render, Tile};
-use vec::Color;
+use lib::args::{self, WhichScene};
+use lib::color::write_color;
+use lib::raytracer::{render, Tile, TILE_SIZE};
+use lib::Color;
+use scene::{scenes, BvhNode};
 
 fn print_ray_rate(rate: f64) -> () {
 	let (measurement, prefix) = if rate >= 1e9 {
@@ -61,10 +50,10 @@ fn main() -> io::Result<()> {
 	};
 
 	let (aspect_ratio, world, cam) = match args.scene {
-		WhichScene::Random => scene::random_scene(&mut rng, false),
-		WhichScene::RandomMoving => scene::random_scene(&mut rng, true),
-		WhichScene::Figure19 => scene::figure19_scene(),
-		WhichScene::Refraction => scene::refraction_scene(),
+		WhichScene::Random => scenes::random_scene(&mut rng, false),
+		WhichScene::RandomMoving => scenes::random_scene(&mut rng, true),
+		WhichScene::Figure19 => scenes::figure19_scene(),
+		WhichScene::Refraction => scenes::refraction_scene(),
 	};
 	let world = Arc::new(
 		BvhNode::new(&mut rng, world.as_ref(), 0.0, 1.0).unwrap_or_else(|e| {
@@ -109,12 +98,12 @@ fn main() -> io::Result<()> {
 	let mut pixels_so_far = 0;
 
 	while let Ok(tile) = recv.recv() {
-		for i in tile.y..(tile.y + raytracer::TILE_SIZE) {
+		for i in tile.y..(tile.y + TILE_SIZE) {
 			if i >= image_height {
 				continue;
 			}
 
-			let width = usize::min(raytracer::TILE_SIZE, image_width - tile.x);
+			let width = usize::min(TILE_SIZE, image_width - tile.x);
 			let final_x = tile.x + width;
 			image[image_height - i - 1][tile.x..final_x]
 				.copy_from_slice(&tile.pixels[i - tile.y][0..width]);

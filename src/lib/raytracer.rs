@@ -3,10 +3,9 @@ use std::time::{Duration, Instant};
 
 use rand::Rng;
 
-use crate::camera::Camera;
-use crate::hittable::Hittable;
-use crate::ray::Ray;
-use crate::vec::Color;
+use crate::lib::{Color, Ray};
+use crate::object::Hittable;
+use crate::scene::Camera;
 
 pub const TILE_SIZE: usize = 16;
 

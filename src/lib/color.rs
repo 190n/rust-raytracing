@@ -1,4 +1,4 @@
-use crate::vec::Color;
+use crate::lib::Color;
 use std::io::{self, Write};
 
 pub fn write_color(w: &mut impl Write, color: Color, samples_per_pixel: usize) -> io::Result<()> {

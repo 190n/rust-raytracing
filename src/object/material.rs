@@ -1,8 +1,7 @@
 use rand::{Rng, RngCore};
 
-use crate::hittable::HitRecord;
-use crate::ray::Ray;
-use crate::vec::{Color, Vec3};
+use super::hittable::HitRecord;
+use crate::lib::{Color, Ray, Vec3};
 
 pub struct ScatterResult {
 	pub attenuation: Color,

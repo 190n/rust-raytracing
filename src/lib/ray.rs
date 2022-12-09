@@ -1,4 +1,4 @@
-use crate::vec::{Point3, Vec3};
+use crate::lib::{Point3, Vec3};
 
 #[derive(Default, Copy, Clone)]
 pub struct Ray {

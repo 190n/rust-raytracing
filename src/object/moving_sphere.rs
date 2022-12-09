@@ -1,11 +1,8 @@
 use std::sync::Arc;
 
-use crate::aabb::Aabb;
-use crate::hittable::{HitRecord, Hittable};
-use crate::material::Material;
-use crate::ray::Ray;
-use crate::sphere::Sphere;
-use crate::vec::{Point3, Vec3};
+use super::{hittable::HitRecord, Hittable, Material, Sphere};
+use crate::lib::{Point3, Ray, Vec3};
+use crate::scene::Aabb;
 
 #[derive(Debug)]
 pub struct MovingSphere {
