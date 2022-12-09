@@ -14,7 +14,8 @@ mod sphere;
 mod vec;
 
 use std::io::{self, BufWriter, Write};
-use std::{fs::File, sync::Arc, sync::Mutex, thread};
+use std::sync::{mpsc, Arc, Mutex};
+use std::{fs::File, thread};
 
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
@@ -22,7 +23,7 @@ use rand_xoshiro::Xoshiro256PlusPlus;
 use args::WhichScene;
 use bvh::BvhNode;
 use color::write_color;
-use raytracer::render;
+use raytracer::{render, Tile};
 use vec::Color;
 
 fn main() -> io::Result<()> {
@@ -64,61 +65,62 @@ fn main() -> io::Result<()> {
 	let max_depth = args.depth;
 	let num_threads = args.threads;
 
-	let images = vec![Vec::<Color>::with_capacity(image_width * image_height); num_threads]
-		.into_iter()
-		.enumerate();
-	let mut handles = Vec::<thread::JoinHandle<Vec<Color>>>::with_capacity(num_threads);
-	let counter = Arc::new(Mutex::new(0usize));
-	let mut logger_assigned = false;
+	let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity(num_threads);
 
-	for (i, mut buf) in images {
-		// pick a variable number of samples per thread so that we total to the number of samples
-		// configured. i.e. with 4 threads and 25 samples, samples will be [6, 6, 6, 7].
-		let samples =
-			(i + 1) * samples_per_pixel / num_threads - i * samples_per_pixel / num_threads;
+	let mut image: Vec<Vec<Color>> = vec![vec![Color::zero(); image_width]; image_height];
+	let (send, recv) = mpsc::channel::<Tile>();
+	let current_pos = Arc::new(Mutex::new((0usize, 0usize)));
+
+	for _ in 0..num_threads {
 		let w = world.clone();
 		let mut thread_rng = Xoshiro256PlusPlus::from_seed(rng.gen());
-		let c = counter.clone();
-		// ceiling division, to ensure that the logger thread is one of the threads that processes
-		// more samples
-		let samples_for_logger = (samples_per_pixel / num_threads)
-			+ (if samples_per_pixel % num_threads == 0 {
-				0
-			} else {
-				1
-			});
-		let will_log = !logger_assigned && samples == samples_for_logger;
-		if will_log {
-			logger_assigned = true;
-		}
+		let pos = current_pos.clone();
+		let q = send.clone();
 		handles.push(thread::spawn(move || {
 			render(
-				&mut buf,
+				q,
 				&mut thread_rng,
 				w,
 				cam,
 				(image_width, image_height),
-				samples,
+				samples_per_pixel,
 				max_depth,
-				if will_log {
-					Some(num_threads * image_height)
-				} else {
-					None
-				},
-				c,
+				pos,
 			);
-			buf
 		}));
 	}
 
-	let output: Vec<Vec<Color>> = handles.into_iter().map(|h| h.join().unwrap()).collect();
+	drop(send);
+
+	let mut pixels_so_far = 0;
+
+	while let Ok(tile) = recv.recv() {
+		for i in tile.y..(tile.y + raytracer::TILE_SIZE) {
+			if i >= image_height {
+				continue;
+			}
+
+			let width = usize::min(raytracer::TILE_SIZE, image_width - tile.x);
+			let final_x = tile.x + width;
+			image[image_height - i - 1][tile.x..final_x]
+				.copy_from_slice(&tile.pixels[i - tile.y][0..width]);
+			pixels_so_far += width;
+		}
+
+		eprint!(
+			"\rprogress: {:5.2}%",
+			pixels_so_far as f64 / (image_width * image_height) as f64 * 100.0
+		);
+	}
+
+	eprint!("\n");
 
 	write!(buffered, "P6\n{} {}\n255\n", image_width, image_height)?;
 
-	// for each pixel, sum every thread's samples
-	for i in 0..(image_width * image_height) {
-		let color = output.iter().map(|v| v[i]).sum();
-		write_color(&mut buffered, color, samples_per_pixel)?;
+	for row in image {
+		for pixel in row {
+			write_color(&mut buffered, pixel, samples_per_pixel)?;
+		}
 	}
 
 	buffered.flush()?;
