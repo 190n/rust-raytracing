@@ -1,6 +1,6 @@
 use rand::{Rng, RngCore};
 
-use super::hittable::HitRecord;
+use super::HitRecord;
 use crate::lib::{Color, Ray, Vec3};
 
 pub struct ScatterResult {

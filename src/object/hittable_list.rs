@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::{hittable::HitRecord, Hittable};
+use super::{HitRecord, Hittable};
 use crate::lib::Ray;
 use crate::scene::Aabb;
 

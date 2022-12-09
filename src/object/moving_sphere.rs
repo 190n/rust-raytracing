@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::{hittable::HitRecord, Hittable, Material, Sphere};
+use super::{HitRecord, Hittable, Material, Sphere};
 use crate::lib::{Point3, Ray, Vec3};
 use crate::scene::Aabb;
 
