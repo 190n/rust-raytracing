@@ -15,7 +15,8 @@ mod vec;
 
 use std::io::{self, BufWriter, Write};
 use std::sync::{mpsc, Arc, Mutex};
-use std::{fs::File, thread};
+use std::time::Duration;
+use std::{fs::File, thread, thread::JoinHandle};
 
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
@@ -25,6 +26,19 @@ use bvh::BvhNode;
 use color::write_color;
 use raytracer::{render, Tile};
 use vec::Color;
+
+fn print_ray_rate(rate: f64) -> () {
+	let (measurement, prefix) = if rate >= 1e9 {
+		(rate / 1e9, "G")
+	} else if rate >= 1e6 {
+		(rate / 1e6, "M")
+	} else if rate >= 1e3 {
+		(rate / 1e3, "k")
+	} else {
+		(rate, "")
+	};
+	eprint!("{:6.2} {}Ray/s", measurement, prefix);
+}
 
 fn main() -> io::Result<()> {
 	let args = args::parse().unwrap_or_else(|e| {
@@ -65,7 +79,7 @@ fn main() -> io::Result<()> {
 	let max_depth = args.depth;
 	let num_threads = args.threads;
 
-	let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity(num_threads);
+	let mut handles: Vec<JoinHandle<(Duration, usize)>> = Vec::with_capacity(num_threads);
 
 	let mut image: Vec<Vec<Color>> = vec![vec![Color::zero(); image_width]; image_height];
 	let (send, recv) = mpsc::channel::<Tile>();
@@ -86,7 +100,7 @@ fn main() -> io::Result<()> {
 				samples_per_pixel,
 				max_depth,
 				pos,
-			);
+			)
 		}));
 	}
 
@@ -108,12 +122,31 @@ fn main() -> io::Result<()> {
 		}
 
 		eprint!(
-			"\rprogress: {:5.2}%",
+			"\rprogress: {:6.2}%",
 			pixels_so_far as f64 / (image_width * image_height) as f64 * 100.0
 		);
 	}
 
 	eprint!("\n");
+
+	if args.verbose {
+		let total_rays_sec: f64 = handles
+			.into_iter()
+			.map(|h| h.join().unwrap())
+			.enumerate()
+			.map(|(i, (duration, pixels))| {
+				let rays = pixels * samples_per_pixel;
+				let rays_sec = (rays as f64) / (duration.as_millis() as f64) * 1000.0;
+				eprint!("thread {:3}: ", i);
+				print_ray_rate(rays_sec);
+				eprint!("\n");
+				rays_sec
+			})
+			.sum();
+		eprint!("total:      ");
+		print_ray_rate(total_rays_sec);
+		eprint!("\n");
+	}
 
 	write!(buffered, "P6\n{} {}\n255\n", image_width, image_height)?;
 

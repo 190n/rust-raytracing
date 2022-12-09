@@ -13,6 +13,7 @@ pub struct Args {
 	pub seed: u64,
 	pub output: Option<String>,
 	pub scene: WhichScene,
+	pub verbose: bool,
 }
 
 #[derive(Debug)]
@@ -83,6 +84,7 @@ pub fn show_help() {
 			"  -d, --depth d:         maximum bounces per ray. default: 50\n",
 			"  -r, --seed r:          random number seed. default: entropy from the OS\n",
 			"  -o, --output filename: file to output PPM image to. default: stdout\n",
+			"  -v, --verbose:         log performance data to stderr\n",
 			"  -S, --scene scene:     which scene to render. options:\n",
 			"    random:\n",
 			"      random spheres; final render from Ray Tracing in One Weekend\n",
@@ -133,6 +135,7 @@ pub fn parse() -> Result<Args, Error> {
 				Ok(seed)
 			})?,
 		output: pargs.opt_value_from_str(["-o", "--output"])?,
+		verbose: pargs.contains(["-v", "--verbose"]),
 		scene: pargs
 			.opt_value_from_str(["-S", "--scene"])?
 			.unwrap_or(WhichScene::Random),

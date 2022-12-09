@@ -1,4 +1,5 @@
 use std::sync::{mpsc, Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use rand::Rng;
 
@@ -59,7 +60,10 @@ pub fn render(
 	samples_per_pixel: usize,
 	max_depth: usize,
 	current_pos: Arc<Mutex<(usize, usize)>>,
-) -> () {
+) -> (Duration, usize) {
+	let mut total_time = Duration::ZERO;
+	let mut total_pixels = 0usize;
+
 	loop {
 		let (x, y) = {
 			let mut guard = current_pos.lock().unwrap();
@@ -68,7 +72,7 @@ pub fn render(
 			if guard.0 > width {
 				guard.1 += TILE_SIZE;
 				if guard.1 > height {
-					return;
+					return (total_time, total_pixels);
 				}
 				guard.0 = 0;
 			}
@@ -77,6 +81,7 @@ pub fn render(
 
 		let mut tile = Tile::new(x, y);
 
+		let instant = Instant::now();
 		for j in (y..(y + TILE_SIZE)).rev() {
 			if j >= height {
 				continue;
@@ -95,8 +100,10 @@ pub fn render(
 					pixel_color += ray_color(rng, r, world.as_ref(), max_depth as i32);
 				}
 				tile.pixels[j - y][i - x] = pixel_color;
+				total_pixels += 1;
 			}
 		}
+		total_time += instant.elapsed();
 
 		out.send(tile).unwrap();
 	}
