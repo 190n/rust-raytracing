@@ -2,10 +2,12 @@ mod lib;
 mod object;
 mod scene;
 
+use std::fmt::{self, Display, Formatter};
+use std::fs::File;
 use std::io::{self, BufWriter, Write};
 use std::sync::{mpsc, Arc, Mutex};
+use std::thread::{self, JoinHandle};
 use std::time::Duration;
-use std::{fs::File, thread, thread::JoinHandle};
 
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
@@ -16,17 +18,22 @@ use lib::raytracer::{render, Tile, TILE_SIZE};
 use lib::Color;
 use scene::{scenes, BvhNode};
 
-fn print_ray_rate(rate: f64) -> () {
-	let (measurement, prefix) = if rate >= 1e9 {
-		(rate / 1e9, "G")
-	} else if rate >= 1e6 {
-		(rate / 1e6, "M")
-	} else if rate >= 1e3 {
-		(rate / 1e3, "k")
-	} else {
-		(rate, "")
-	};
-	eprint!("{:6.2} {}Ray/s", measurement, prefix);
+struct RayRate(f64);
+
+impl Display for RayRate {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		let (measurement, prefix) = if self.0 >= 1e9 {
+			(self.0 / 1e9, "G")
+		} else if self.0 >= 1e6 {
+			(self.0 / 1e6, "M")
+		} else if self.0 >= 1e3 {
+			(self.0 / 1e3, "k")
+		} else {
+			(self.0, "")
+		};
+		write!(f, "{:6.2} {}Ray/s", measurement, prefix)?;
+		Ok(())
+	}
 }
 
 fn main() -> io::Result<()> {
@@ -126,15 +133,11 @@ fn main() -> io::Result<()> {
 			.map(|(i, (duration, pixels))| {
 				let rays = pixels * samples_per_pixel;
 				let rays_sec = (rays as f64) / (duration.as_millis() as f64) * 1000.0;
-				eprint!("thread {:3}: ", i);
-				print_ray_rate(rays_sec);
-				eprint!("\n");
+				eprintln!("thread {:3}: {}", i, RayRate(rays_sec));
 				rays_sec
 			})
 			.sum();
-		eprint!("total:      ");
-		print_ray_rate(total_rays_sec);
-		eprint!("\n");
+		eprintln!("total:      {}", RayRate(total_rays_sec));
 	}
 
 	write!(buffered, "P6\n{} {}\n255\n", image_width, image_height)?;
