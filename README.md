@@ -36,16 +36,19 @@ usage: raytracing [-t|--threads n] [-w|--width w] [-s|--samples s] [-r|--seed r]
   -d, --depth d:         maximum bounces per ray. default: 50
   -r, --seed r:          random number seed. default: entropy from the OS
   -o, --output filename: file to output PPM image to. default: stdout
+  -v, --verbose:         log performance data to stderr
   -S, --scene scene:     which scene to render. options:
-    random:
+    weekend:
       random spheres; final render from Ray Tracing in One Weekend
-    random_moving:
-      random spheres, but some of them are moving; figure 1 from Ray Tracing: The Next Week
+    tuesday:
+      the random spheres scene, but upgraded with features from The Next Week:
+        - moving spheres
+        - checkered ground texture
     figure19:
       figure 19 from Ray Tracing in One Weekend; three spheres with different materials
     refraction:
       a series of spheres lowering into a refractive material
-    default: random
+    default: weekend
 ```
 
 ## Samples
