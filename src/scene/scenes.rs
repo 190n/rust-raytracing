@@ -6,6 +6,7 @@ use super::Camera;
 use super::HittableList;
 use crate::lib::{Color, Point3, Vec3};
 use crate::object::material::{Dielectric, Lambertian, Material, Metal};
+use crate::object::texture::CheckerTexture;
 use crate::object::{MovingSphere, Sphere};
 
 pub type Scene = (f64, HittableList, Camera);
@@ -21,17 +22,13 @@ pub fn figure19_scene() -> Scene {
 	world.add(Arc::new(Sphere::new(
 		Point3::new(0.0, -100.5, -1.0),
 		100.0,
-		Arc::new(Lambertian {
-			albedo: Color::new(0.8, 0.8, 0.0),
-		}),
+		Arc::new(Lambertian::with_color(Color::new(0.8, 0.8, 0.0))),
 	)));
 	// center
 	world.add(Arc::new(Sphere::new(
 		Point3::new(0.0, 0.0, -1.0),
 		0.5,
-		Arc::new(Lambertian {
-			albedo: Color::new(0.1, 0.2, 0.5),
-		}),
+		Arc::new(Lambertian::with_color(Color::new(0.1, 0.2, 0.5))),
 	)));
 	// left (outer)
 	world.add(Arc::new(Sphere::new(
@@ -73,10 +70,7 @@ pub fn figure19_scene() -> Scene {
 
 pub fn refraction_scene() -> Scene {
 	let mut world = HittableList::new();
-	let ball_material = Arc::new(Lambertian {
-		albedo: Color::new(0.0, 0.6, 0.0),
-		// fuzz: 0.0,
-	});
+	let ball_material = Arc::new(Lambertian::with_color(Color::new(0.0, 0.6, 0.0)));
 	world.add(Arc::new(Sphere::new(
 		Point3::new(0.0, -1000.0, 0.0),
 		1000.0,
@@ -113,13 +107,14 @@ pub fn refraction_scene() -> Scene {
 pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, moving: bool) -> Scene {
 	let mut world = HittableList::new();
 
-	let ground_material = Arc::new(Lambertian {
-		albedo: Color::new(0.5, 0.5, 0.5),
-	});
+	let checker = Arc::new(CheckerTexture::with_colors(
+		Color::new(0.2, 0.3, 0.1),
+		Color::new(0.9, 0.9, 0.9),
+	));
 	world.add(Arc::new(Sphere::new(
 		Point3::new(0.0, -1000.0, 0.0),
 		1000.0,
-		ground_material,
+		Arc::new(Lambertian::new(checker)),
 	)));
 
 	for a in -11..11 {
@@ -133,9 +128,9 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, moving: bool) -> Scene {
 
 			if (center - Point3::new(4.0, 0.2, 0.0)).length_squared() > 0.81 {
 				let sphere_material: Arc<dyn Material> = if choose_mat < 0.8 {
-					Arc::new(Lambertian {
-						albedo: Color::random(rng) * Color::random(rng),
-					})
+					Arc::new(Lambertian::with_color(
+						Color::random(rng) * Color::random(rng),
+					))
 				} else if choose_mat < 0.95 {
 					Arc::new(Metal {
 						albedo: Color::random_range(rng, 0.5, 1.0),
@@ -174,9 +169,7 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, moving: bool) -> Scene {
 		1.0,
 		material1,
 	)));
-	let material2 = Arc::new(Lambertian {
-		albedo: Color::new(0.4, 0.2, 0.1),
-	});
+	let material2 = Arc::new(Lambertian::with_color(Color::new(0.4, 0.2, 0.1)));
 	world.add(Arc::new(Sphere::new(
 		Point3::new(-4.0, 1.0, 0.0),
 		1.0,
@@ -195,7 +188,7 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, moving: bool) -> Scene {
 	let from = Point3::new(13.0, 2.0, 3.0);
 	let at = Point3::zero();
 	let dist = 10.0;
-	let aperture = 0.1;
+	let aperture = 0.0;
 	let aspect = 3.0 / 2.0;
 
 	let cam = Camera::new(

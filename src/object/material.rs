@@ -1,8 +1,11 @@
 use std::fmt::Debug;
+use std::sync::Arc;
 
 use rand::{Rng, RngCore};
 
+use super::texture::SolidColor;
 use super::HitRecord;
+use super::Texture;
 use crate::lib::{Color, Ray, Vec3};
 
 pub struct ScatterResult {
@@ -16,7 +19,19 @@ pub trait Material: Debug + Sync + Send {
 
 #[derive(Debug)]
 pub struct Lambertian {
-	pub albedo: Color,
+	albedo: Arc<dyn Texture>,
+}
+
+impl Lambertian {
+	pub fn new(albedo: Arc<dyn Texture>) -> Lambertian {
+		Lambertian { albedo }
+	}
+
+	pub fn with_color(color: Color) -> Lambertian {
+		Lambertian {
+			albedo: Arc::new(SolidColor::new(color)),
+		}
+	}
 }
 
 impl Material for Lambertian {
@@ -28,7 +43,7 @@ impl Material for Lambertian {
 
 		Some(ScatterResult {
 			scattered: Ray::new(rec.p, scatter_direction, r_in.time()),
-			attenuation: self.albedo,
+			attenuation: self.albedo.value(rec.u, rec.v, rec.p),
 		})
 	}
 }

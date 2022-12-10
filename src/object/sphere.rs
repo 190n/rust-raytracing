@@ -1,3 +1,4 @@
+use std::f64::consts::PI;
 use std::sync::Arc;
 
 use super::{HitRecord, Hittable, Material};
@@ -12,6 +13,14 @@ pub struct Sphere {
 }
 
 impl Sphere {
+	fn get_sphere_uv(p: Point3) -> (f64, f64) {
+		let theta = f64::acos(-p.y());
+		let phi = f64::atan2(-p.z(), p.x()) + PI;
+		let u = phi / (2.0 * PI);
+		let v = theta / PI;
+		(u, v)
+	}
+
 	pub fn new(center: Point3, radius: f64, mat_ptr: Arc<dyn Material>) -> Self {
 		Self {
 			center,
@@ -44,12 +53,15 @@ impl Hittable for Sphere {
 
 		let p = r.at(root);
 		let outward_normal = (p - self.center) / self.radius;
+		let (u, v) = Sphere::get_sphere_uv(outward_normal);
 		let mut hr = HitRecord {
 			t: root,
 			p,
 			normal: Vec3::zero(),
 			front_face: false,
 			mat_ptr: self.mat_ptr.clone(),
+			u,
+			v,
 		};
 		hr.set_face_normal(r, outward_normal);
 		Some(hr)
