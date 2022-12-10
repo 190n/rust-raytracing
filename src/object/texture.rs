@@ -1,3 +1,4 @@
+use once_cell::sync::OnceCell;
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -51,5 +52,47 @@ impl Texture for CheckerTexture {
 		} else {
 			self.even.value(u, v, p)
 		}
+	}
+}
+
+#[derive(Debug)]
+pub struct StripeTexture {
+	stripes: Vec<Arc<dyn Texture>>,
+}
+
+impl StripeTexture {
+	pub fn new(stripes: &[Arc<dyn Texture>]) -> StripeTexture {
+		StripeTexture {
+			stripes: Vec::from(stripes),
+		}
+	}
+
+	pub fn with_colors(colors: &[Color]) -> StripeTexture {
+		StripeTexture {
+			stripes: Vec::from_iter(
+				colors
+					.iter()
+					.map(|&c| Arc::new(SolidColor::new(c)) as Arc<dyn Texture>),
+			),
+		}
+	}
+
+	pub fn trans() -> Arc<dyn Texture> {
+		static TRANS_FLAG: OnceCell<Arc<dyn Texture>> = OnceCell::new();
+		TRANS_FLAG
+			.get_or_init(|| {
+				let blue = Color::from_srgb_hex(0x5bcefa);
+				let pink = Color::from_srgb_hex(0xf5a9b8);
+				let white = Color::from_srgb_hex(0xffffff);
+				Arc::new(StripeTexture::with_colors(&[blue, pink, white, pink, blue]))
+			})
+			.clone()
+	}
+}
+
+impl Texture for StripeTexture {
+	fn value(&self, u: f64, v: f64, p: Point3) -> Color {
+		let index = ((v * self.stripes.len() as f64) as usize).clamp(0, self.stripes.len() - 1);
+		self.stripes[index].value(u, v, p)
 	}
 }
