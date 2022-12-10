@@ -18,8 +18,8 @@ pub struct Args {
 
 #[derive(Debug)]
 pub enum WhichScene {
-	Random,
-	RandomMoving,
+	Weekend,
+	Tuesday,
 	Figure19,
 	Refraction,
 }
@@ -28,8 +28,8 @@ impl FromStr for WhichScene {
 	type Err = String;
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
-			"random" => Ok(Self::Random),
-			"random_moving" => Ok(Self::RandomMoving),
+			"weekend" => Ok(Self::Weekend),
+			"tuesday" => Ok(Self::Tuesday),
 			"figure19" => Ok(Self::Figure19),
 			"refraction" => Ok(Self::Refraction),
 			_ => Err(format!("unknown scene: {}", s)),
@@ -86,15 +86,17 @@ pub fn show_help() {
 			"  -o, --output filename: file to output PPM image to. default: stdout\n",
 			"  -v, --verbose:         log performance data to stderr\n",
 			"  -S, --scene scene:     which scene to render. options:\n",
-			"    random:\n",
+			"    weekend:\n",
 			"      random spheres; final render from Ray Tracing in One Weekend\n",
-			"    random_moving:\n",
-			"      random spheres, but some of them are moving; figure 1 from Ray Tracing: The Next Week\n",
+			"    tuesday:\n",
+			"      the random spheres scene, but upgraded with features from The Next Week:\n",
+			"        - moving spheres\n",
+			"        - checkered ground texture\n",
 			"    figure19:\n",
 			"      figure 19 from Ray Tracing in One Weekend; three spheres with different materials\n",
 			"    refraction:\n",
 			"      a series of spheres lowering into a refractive material\n",
-			"    default: random\n",
+			"    default: weekend\n",
 		),
 		std::env::args_os()
 			.nth(0)
@@ -138,7 +140,7 @@ pub fn parse() -> Result<Args, Error> {
 		verbose: pargs.contains(["-v", "--verbose"]),
 		scene: pargs
 			.opt_value_from_str(["-S", "--scene"])?
-			.unwrap_or(WhichScene::Random),
+			.unwrap_or(WhichScene::Weekend),
 	};
 
 	if args.threads == 0 {

@@ -104,17 +104,21 @@ pub fn refraction_scene() -> Scene {
 	(aspect, world, cam)
 }
 
-pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, moving: bool) -> Scene {
+pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool) -> Scene {
 	let mut world = HittableList::new();
 
-	let checker = Arc::new(CheckerTexture::with_colors(
-		Color::new(0.2, 0.3, 0.1),
-		Color::new(0.9, 0.9, 0.9),
-	));
+	let ground_material = if next_week {
+		Arc::new(Lambertian::new(Arc::new(CheckerTexture::with_colors(
+			Color::new(0.2, 0.3, 0.1),
+			Color::new(0.9, 0.9, 0.9),
+		))))
+	} else {
+		Arc::new(Lambertian::with_color(Color::new(0.5, 0.5, 0.5)))
+	};
 	world.add(Arc::new(Sphere::new(
 		Point3::new(0.0, -1000.0, 0.0),
 		1000.0,
-		Arc::new(Lambertian::new(checker)),
+		ground_material,
 	)));
 
 	for a in -11..11 {
@@ -143,7 +147,7 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, moving: bool) -> Scene {
 					})
 				};
 
-				if moving && choose_mat < 0.8 {
+				if next_week && choose_mat < 0.8 {
 					let center2 = center + Vec3::new(0.0, rng.gen_range(0.0..0.5), 0.0);
 					world.add(Arc::new(MovingSphere::new(
 						center,
