@@ -192,7 +192,7 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool) -> Scene {
 	let from = Point3::new(13.0, 2.0, 3.0);
 	let at = Point3::zero();
 	let dist = 10.0;
-	let aperture = 0.0;
+	let aperture = 0.1;
 	let aspect = 3.0 / 2.0;
 
 	let cam = Camera::new(
