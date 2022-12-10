@@ -235,4 +235,3 @@ impl Sum for Vec3 {
 }
 
 pub type Point3 = Vec3;
-pub type Color = Vec3;
