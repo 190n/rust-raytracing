@@ -60,19 +60,27 @@ pub fn render(
 ) -> (Duration, usize) {
 	let mut total_time = Duration::ZERO;
 	let mut total_pixels = 0usize;
+	let mut done = false;
 
-	loop {
+	while !done {
 		let (x, y) = {
 			let mut guard = current_pos.lock().unwrap();
 			let previous_coords = *guard;
 			guard.0 += TILE_SIZE;
-			if guard.0 > width {
+			if guard.0 >= width {
+				guard.0 = 0;
 				guard.1 += TILE_SIZE;
-				if guard.1 > height {
+			}
+			if guard.1 >= height {
+				done = true;
+				// in this case, another thread already rendered the last tile (putting guard at
+				// (0, max height)) so we just need to return
+				if guard.0 == TILE_SIZE {
+					guard.0 = 0;
 					return (total_time, total_pixels);
 				}
-				guard.0 = 0;
 			}
+
 			previous_coords
 		};
 
@@ -104,4 +112,6 @@ pub fn render(
 
 		out.send(tile).unwrap();
 	}
+
+	return (total_time, total_pixels);
 }
