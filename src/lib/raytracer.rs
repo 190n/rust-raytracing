@@ -45,11 +45,9 @@ fn ray_color(rng: &mut impl Rng, r: Ray, world: &dyn Hittable, depth: i32) -> Co
 }
 
 /// Render a scene
-/// v:         vector where colors should be stored
-/// max_depth: maximum number of light bounces per sample
-/// log:       Some(usize) = this thread should log, and the usize is height * num_threads
-///            None        = no logging from this thread
-/// counter:   shared counter of how many scanlines have been rendered so far; initialize as 0
+/// out:         queue to send completed tiles into
+/// max_depth:   maximum number of light bounces per sample
+/// current_pos: shared tracker of the next tile to render (top left corner)
 pub fn render(
 	out: mpsc::Sender<Tile>,
 	rng: &mut impl Rng,
