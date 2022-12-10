@@ -40,6 +40,8 @@ usage: raytracing [-t|--threads n] [-w|--width w] [-s|--samples s] [-r|--seed r]
   -S, --scene scene:     which scene to render. options:
     weekend:
       random spheres; final render from Ray Tracing in One Weekend
+    gay:
+      the random spheres scene, but with pride flag textures on the small spheres
     tuesday:
       the random spheres scene, but upgraded with features from The Next Week:
         - moving spheres

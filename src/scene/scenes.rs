@@ -6,7 +6,7 @@ use super::Camera;
 use super::HittableList;
 use crate::lib::{Color, Point3, Vec3};
 use crate::object::material::{Dielectric, Lambertian, Material, Metal};
-use crate::object::texture::CheckerTexture;
+use crate::object::texture::{CheckerTexture, StripeTexture};
 use crate::object::{MovingSphere, Sphere};
 
 pub type Scene = (f64, HittableList, Camera);
@@ -104,7 +104,7 @@ pub fn refraction_scene() -> Scene {
 	(aspect, world, cam)
 }
 
-pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool) -> Scene {
+pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) -> Scene {
 	let mut world = HittableList::new();
 
 	let ground_material = if next_week {
@@ -121,6 +121,10 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool) -> Scene {
 		ground_material,
 	)));
 
+	let trans = Arc::new(Lambertian::new(StripeTexture::trans_sphere()));
+	let rainbow = Arc::new(Lambertian::new(StripeTexture::rainbow_sphere()));
+	let enby = Arc::new(Lambertian::new(StripeTexture::enby_sphere()));
+
 	for a in -11..11 {
 		for b in -11..11 {
 			let choose_mat = rng.gen::<f64>();
@@ -131,20 +135,30 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool) -> Scene {
 			);
 
 			if (center - Point3::new(4.0, 0.2, 0.0)).length_squared() > 0.81 {
-				let sphere_material: Arc<dyn Material> = if choose_mat < 0.8 {
-					Arc::new(Lambertian::with_color(
-						Color::random(rng) * Color::random(rng),
-					))
-				} else if choose_mat < 0.95 {
-					Arc::new(Metal {
-						albedo: Color::random_range(rng, 0.5, 1.0),
-						fuzz: rng.gen_range(0.0..0.5),
-					})
+				let sphere_material: Arc<dyn Material> = if gay {
+					if choose_mat < 1.0 / 3.0 {
+						trans.clone()
+					} else if choose_mat < 2.0 / 3.0 {
+						rainbow.clone()
+					} else {
+						enby.clone()
+					}
 				} else {
-					Arc::new(Dielectric {
-						ir: 1.5,
-						color: Color::random_range(rng, 0.5, 1.0),
-					})
+					if choose_mat < 0.8 {
+						Arc::new(Lambertian::with_color(
+							Color::random(rng) * Color::random(rng),
+						))
+					} else if choose_mat < 0.95 {
+						Arc::new(Metal {
+							albedo: Color::random_range(rng, 0.5, 1.0),
+							fuzz: rng.gen_range(0.0..0.5),
+						})
+					} else {
+						Arc::new(Dielectric {
+							ir: 1.5,
+							color: Color::random_range(rng, 0.5, 1.0),
+						})
+					}
 				};
 
 				if next_week && choose_mat < 0.8 {

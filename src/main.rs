@@ -57,8 +57,9 @@ fn main() -> io::Result<()> {
 	};
 
 	let (aspect_ratio, world, cam) = match args.scene {
-		WhichScene::Weekend => scenes::random_scene(&mut rng, false),
-		WhichScene::Tuesday => scenes::random_scene(&mut rng, true),
+		WhichScene::Weekend => scenes::random_scene(&mut rng, false, false),
+		WhichScene::Gay => scenes::random_scene(&mut rng, false, true),
+		WhichScene::Tuesday => scenes::random_scene(&mut rng, true, false),
 		WhichScene::Figure19 => scenes::figure19_scene(),
 		WhichScene::Refraction => scenes::refraction_scene(),
 	};

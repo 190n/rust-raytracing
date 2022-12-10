@@ -19,6 +19,7 @@ pub struct Args {
 #[derive(Debug)]
 pub enum WhichScene {
 	Weekend,
+	Gay,
 	Tuesday,
 	Figure19,
 	Refraction,
@@ -29,6 +30,7 @@ impl FromStr for WhichScene {
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			"weekend" => Ok(Self::Weekend),
+			"gay" => Ok(Self::Gay),
 			"tuesday" => Ok(Self::Tuesday),
 			"figure19" => Ok(Self::Figure19),
 			"refraction" => Ok(Self::Refraction),
@@ -88,6 +90,8 @@ pub fn show_help() {
 			"  -S, --scene scene:     which scene to render. options:\n",
 			"    weekend:\n",
 			"      random spheres; final render from Ray Tracing in One Weekend\n",
+			"    gay:\n",
+			"      the random spheres scene, but with pride flag textures on the small spheres\n",
 			"    tuesday:\n",
 			"      the random spheres scene, but upgraded with features from The Next Week:\n",
 			"        - moving spheres\n",
