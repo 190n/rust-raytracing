@@ -3,9 +3,9 @@ use std::sync::Arc;
 use rand::Rng;
 
 use super::Camera;
+use super::HittableList;
 use crate::lib::{Color, Point3, Vec3};
 use crate::object::material::{Dielectric, Lambertian, Material, Metal};
-use crate::object::HittableList;
 use crate::object::{MovingSphere, Sphere};
 
 pub type Scene = (f64, HittableList, Camera);

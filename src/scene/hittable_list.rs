@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use super::{HitRecord, Hittable};
 use crate::lib::Ray;
+use crate::object::{HitRecord, Hittable};
 use crate::scene::Aabb;
 
 #[derive(Debug)]
