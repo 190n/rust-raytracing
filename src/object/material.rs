@@ -50,9 +50,18 @@ impl Material for Lambertian {
 
 #[derive(Debug)]
 pub struct Metal {
-	pub albedo: Color,
-	/// metal fuzziness, 0-1
-	pub fuzz: f64,
+	albedo: Arc<dyn Texture>,
+	fuzz: f64,
+}
+
+impl Metal {
+	pub fn new(albedo: Arc<dyn Texture>, fuzz: f64) -> Metal {
+		Metal { albedo, fuzz }
+	}
+
+	pub fn with_color(color: Color, fuzz: f64) -> Metal {
+		Metal::new(Arc::new(SolidColor::new(color)), fuzz)
+	}
 }
 
 impl Material for Metal {
@@ -65,7 +74,7 @@ impl Material for Metal {
 		);
 		if scattered.direction().dot(rec.normal) > 0.0 {
 			Some(ScatterResult {
-				attenuation: self.albedo,
+				attenuation: self.albedo.value(rec.u, rec.v, rec.p),
 				scattered,
 			})
 		} else {

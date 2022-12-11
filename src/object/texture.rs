@@ -1,8 +1,11 @@
-use once_cell::sync::OnceCell;
-use rand::Rng;
 use std::f64::consts::PI;
 use std::fmt::Debug;
+use std::path::Path;
 use std::sync::Arc;
+
+use image::{DynamicImage, ImageResult};
+use once_cell::sync::OnceCell;
+use rand::Rng;
 
 use super::Perlin;
 use crate::lib::{Color, Point3};
@@ -192,5 +195,36 @@ impl Texture for NoiseTexture {
 		let value = 0.5
 			* (1.0 + f64::sin(self.scale * p.z() + 10.0 * self.noise.turbulence(p, self.depth)));
 		low + (high - low) * value
+	}
+}
+
+#[derive(Debug)]
+pub struct ImageTexture {
+	image: DynamicImage,
+}
+
+impl ImageTexture {
+	pub fn new(filename: impl AsRef<Path>) -> ImageResult<ImageTexture> {
+		Ok(ImageTexture {
+			image: image::open(filename)?,
+		})
+	}
+}
+
+impl Texture for ImageTexture {
+	fn value(&self, u: f64, v: f64, _p: Point3) -> Color {
+		let u = u.clamp(0.0, 1.0);
+		let v = 1.0 - v.clamp(0.0, 1.0);
+
+		let i = ((u * self.image.width() as f64) as u32).clamp(0, self.image.width() - 1);
+		let j = ((v * self.image.height() as f64) as u32).clamp(0, self.image.height() - 1);
+
+		match &self.image {
+			DynamicImage::ImageRgb8(im) => {
+				let pix = im.get_pixel(i, j);
+				Color::from_srgb(pix.0[0], pix.0[1], pix.0[2])
+			},
+			_ => panic!("bad image type: {:?}", self.image.color()),
+		}
 	}
 }

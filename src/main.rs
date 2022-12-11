@@ -82,6 +82,7 @@ fn main() -> io::Result<()> {
 		WhichScene::Figure19 => scenes::figure19_scene(),
 		WhichScene::Refraction => scenes::refraction_scene(),
 		WhichScene::Perlin => scenes::perlin_spheres(&mut rng),
+		WhichScene::Earth => scenes::earth().expect("failed to load texture"),
 	};
 	let world = Arc::new(
 		BvhNode::new(&mut rng, world.as_ref(), 0.0, 1.0).unwrap_or_else(|e| {

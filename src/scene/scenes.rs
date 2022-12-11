@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
+use image::ImageResult;
 use rand::Rng;
 
 use super::Camera;
 use super::HittableList;
 use crate::lib::{Color, Point3, Vec3};
 use crate::object::material::{Dielectric, Lambertian, Material, Metal};
+use crate::object::texture::ImageTexture;
 use crate::object::texture::NoiseTexture;
 use crate::object::texture::SolidColor;
 use crate::object::texture::{CheckerTexture, StripeTexture};
@@ -68,10 +70,7 @@ pub fn figure19_scene() -> Scene {
 	world.add(Arc::new(Sphere::new(
 		Point3::new(1.0, 0.0, -1.0),
 		0.5,
-		Arc::new(Metal {
-			albedo: Color::new(0.8, 0.6, 0.2),
-			fuzz: 0.0,
-		}),
+		Arc::new(Metal::with_color(Color::new(0.8, 0.6, 0.2), 0.0)),
 	)));
 
 	let aspect = 16.0 / 9.0;
@@ -171,10 +170,10 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 							Color::random(rng) * Color::random(rng),
 						))
 					} else if choose_mat < 0.95 {
-						Arc::new(Metal {
-							albedo: Color::random_range(rng, 0.5, 1.0),
-							fuzz: rng.gen_range(0.0..0.5),
-						})
+						Arc::new(Metal::with_color(
+							Color::random_range(rng, 0.5, 1.0),
+							rng.gen_range(0.0..0.5),
+						))
 					} else {
 						Arc::new(Dielectric {
 							ir: 1.5,
@@ -215,10 +214,7 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 		1.0,
 		material2,
 	)));
-	let material3 = Arc::new(Metal {
-		albedo: Color::new(0.7, 0.6, 0.5),
-		fuzz: 0.0,
-	});
+	let material3 = Arc::new(Metal::with_color(Color::new(0.7, 0.6, 0.5), 0.0));
 	world.add(Arc::new(Sphere::new(
 		Point3::new(4.0, 1.0, 0.0),
 		1.0,
@@ -229,21 +225,44 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 }
 
 pub fn perlin_spheres<R: Rng + ?Sized>(rng: &mut R) -> Scene {
-	let mut objects = HittableList::new();
+	let mut world = HittableList::new();
 	let black = Arc::new(SolidColor::new(Color::zero()));
 	let white = Arc::new(SolidColor::new(Color::new(1.0, 1.0, 1.0)));
 	let perlin = Arc::new(NoiseTexture::new(rng, black, white, 4.0, 7));
 	let material = Arc::new(Lambertian::new(perlin));
 
-	objects.add(Arc::new(Sphere::new(
+	world.add(Arc::new(Sphere::new(
 		Point3::new(0.0, -1000.0, 0.0),
 		1000.0,
 		material.clone(),
 	)));
-	objects.add(Arc::new(Sphere::new(
+	world.add(Arc::new(Sphere::new(
 		Point3::new(0.0, 2.0, 0.0),
 		2.0,
 		material.clone(),
 	)));
-	(1.5, objects, standard_camera())
+	(1.5, world, standard_camera())
+}
+
+pub fn earth() -> ImageResult<Scene> {
+	let mut world = HittableList::new();
+	let earth_texture = Arc::new(ImageTexture::new("textures/earthmap.jpg")?);
+	let earth_mat = Arc::new(Lambertian::new(earth_texture));
+	let globe = Arc::new(Sphere::new(Point3::zero(), 2.0, earth_mat));
+	world.add(globe);
+	Ok((
+		1.5,
+		world,
+		Camera::new(
+			Point3::new(14.0, 0.0, 0.0),
+			Point3::zero(),
+			Vec3::new(0.0, 1.0, 0.0),
+			20.0,
+			1.5,
+			0.0,
+			1.0,
+			0.0,
+			1.0,
+		),
+	))
 }

@@ -24,6 +24,7 @@ pub enum WhichScene {
 	Figure19,
 	Refraction,
 	Perlin,
+	Earth,
 }
 
 impl FromStr for WhichScene {
@@ -36,6 +37,7 @@ impl FromStr for WhichScene {
 			"figure19" => Ok(Self::Figure19),
 			"refraction" => Ok(Self::Refraction),
 			"perlin" => Ok(Self::Perlin),
+			"earth" => Ok(Self::Earth),
 			_ => Err(format!("unknown scene: {}", s)),
 		}
 	}
@@ -104,6 +106,8 @@ pub fn show_help() {
 			"      a series of spheres lowering into a refractive material\n",
 			"    perlin:\n",
 			"      two spheres with Perlin noise\n",
+			"    earth:\n",
+			"      a globe with the texture of the Earth\n",
 			"    default: weekend\n",
 		),
 		std::env::args_os()
