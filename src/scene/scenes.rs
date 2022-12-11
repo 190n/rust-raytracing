@@ -7,10 +7,9 @@ use super::Camera;
 use super::HittableList;
 use crate::lib::{Color, Point3, Vec3};
 use crate::object::material::{Dielectric, Lambertian, Material, Metal};
-use crate::object::texture::ImageTexture;
-use crate::object::texture::NoiseTexture;
-use crate::object::texture::SolidColor;
-use crate::object::texture::{CheckerTexture, FunctionTexture, StripeTexture};
+use crate::object::texture::{
+	CheckerTexture, FunctionTexture, ImageTexture, NoiseTexture, SolidColor, StripeTexture, Texture,
+};
 use crate::object::{MovingSphere, Sphere};
 
 pub type Scene = (HittableList, Camera, Color);
@@ -233,13 +232,16 @@ pub fn perlin_spheres<R: Rng + ?Sized>(rng: &mut R) -> Scene {
 	let black = Arc::new(SolidColor::new(Color::zero()));
 	let white = Arc::new(SolidColor::new(Color::new(1.0, 1.0, 1.0)));
 	let perlin1 = Arc::new(NoiseTexture::new(rng, black.clone(), white.clone(), 4.0, 7));
-	let perlin2 = Arc::new(FunctionTexture::new(
-		|c, _u, _v, _p| {
-			let v = c.x();
-			Color::new(0.0, 0.1, 0.3) + v.powi(15) * Color::new(1.0, 0.9, 0.7)
-		},
-		Arc::new(NoiseTexture::new(rng, black, white, 10.0, 50)),
-	));
+
+	let noise = NoiseTexture::new(rng, black, white, 10.0, 50);
+	let perlin2 = Arc::new(FunctionTexture(move |u, v, p| {
+		let v = noise.value(u, v, p).x();
+		let blue = Color::new(0.0, 0.1, 0.15);
+		let white = Color::new(1.0, 1.0, 1.0);
+		// interpolate, but darken a lot using the exponent
+		blue + (white - blue) * v.powi(15)
+	}));
+
 	let material1 = Arc::new(Metal::new(perlin1, 0.3));
 	let material2 = Arc::new(Lambertian::new(perlin2));
 

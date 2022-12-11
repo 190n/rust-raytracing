@@ -1,5 +1,5 @@
 use std::f64::consts::PI;
-use std::fmt::Debug;
+use std::fmt::{self, Debug, Formatter};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -232,26 +232,16 @@ impl Texture for ImageTexture {
 	}
 }
 
-pub struct FunctionTexture<F: Fn(Color, f64, f64, Point3) -> Color + Send + Sync> {
-	func: F,
-	tex: Arc<dyn Texture>,
-}
+pub struct FunctionTexture<F: Fn(f64, f64, Point3) -> Color + Send + Sync>(pub F);
 
-impl<F: Fn(Color, f64, f64, Point3) -> Color + Send + Sync> Debug for FunctionTexture<F> {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(f, "FunctionTexture {{ {:?} }}", self.tex)?;
-		Ok(())
+impl<F: Fn(f64, f64, Point3) -> Color + Send + Sync> Debug for FunctionTexture<F> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		write!(f, "FunctionTexture")
 	}
 }
 
-impl<F: Fn(Color, f64, f64, Point3) -> Color + Send + Sync> FunctionTexture<F> {
-	pub fn new(func: F, tex: Arc<dyn Texture>) -> Self {
-		Self { func, tex }
-	}
-}
-
-impl<F: Fn(Color, f64, f64, Point3) -> Color + Send + Sync> Texture for FunctionTexture<F> {
+impl<F: Fn(f64, f64, Point3) -> Color + Send + Sync> Texture for FunctionTexture<F> {
 	fn value(&self, u: f64, v: f64, p: Point3) -> Color {
-		(self.func)(self.tex.value(u, v, p), u, v, p)
+		(self.0)(u, v, p)
 	}
 }
