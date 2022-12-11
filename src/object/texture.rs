@@ -163,6 +163,7 @@ pub struct NoiseTexture {
 	noise: Perlin,
 	low: Arc<dyn Texture>,
 	high: Arc<dyn Texture>,
+	scale: f64,
 }
 
 impl NoiseTexture {
@@ -170,11 +171,13 @@ impl NoiseTexture {
 		rng: &mut R,
 		low: Arc<dyn Texture>,
 		high: Arc<dyn Texture>,
+		scale: f64,
 	) -> NoiseTexture {
 		NoiseTexture {
 			noise: Perlin::new(rng),
 			low,
 			high,
+			scale,
 		}
 	}
 }
@@ -183,6 +186,6 @@ impl Texture for NoiseTexture {
 	fn value(&self, u: f64, v: f64, p: Point3) -> Color {
 		let low = self.low.value(u, v, p);
 		let high = self.high.value(u, v, p);
-		low + (high - low) * self.noise.noise(p)
+		low + (high - low) * self.noise.noise(self.scale * p)
 	}
 }

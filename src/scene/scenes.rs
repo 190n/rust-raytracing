@@ -232,7 +232,7 @@ pub fn perlin_spheres<R: Rng + ?Sized>(rng: &mut R) -> Scene {
 	let mut objects = HittableList::new();
 	let white = Arc::new(SolidColor::new(Color::new(1.0, 1.0, 1.0)));
 	let black = Arc::new(SolidColor::new(Color::zero()));
-	let perlin = Arc::new(NoiseTexture::new(rng, white, black));
+	let perlin = Arc::new(NoiseTexture::new(rng, white, black, 4.0));
 	let material = Arc::new(Lambertian::new(perlin));
 
 	objects.add(Arc::new(Sphere::new(
