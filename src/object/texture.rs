@@ -1,8 +1,10 @@
 use once_cell::sync::OnceCell;
+use rand::Rng;
 use std::f64::consts::PI;
 use std::fmt::Debug;
 use std::sync::Arc;
 
+use super::Perlin;
 use crate::lib::{Color, Point3};
 
 pub trait Texture: Debug + Sync + Send {
@@ -153,5 +155,34 @@ impl Texture for StripeTexture {
 
 		let index = ((v * self.stripes.len() as f64) as usize).clamp(0, self.stripes.len() - 1);
 		self.stripes[index].value(u, v, p)
+	}
+}
+
+#[derive(Debug)]
+pub struct NoiseTexture {
+	noise: Perlin,
+	low: Arc<dyn Texture>,
+	high: Arc<dyn Texture>,
+}
+
+impl NoiseTexture {
+	pub fn new<R: Rng + ?Sized>(
+		rng: &mut R,
+		low: Arc<dyn Texture>,
+		high: Arc<dyn Texture>,
+	) -> NoiseTexture {
+		NoiseTexture {
+			noise: Perlin::new(rng),
+			low,
+			high,
+		}
+	}
+}
+
+impl Texture for NoiseTexture {
+	fn value(&self, u: f64, v: f64, p: Point3) -> Color {
+		let low = self.low.value(u, v, p);
+		let high = self.high.value(u, v, p);
+		low + (high - low) * self.noise.noise(p)
 	}
 }

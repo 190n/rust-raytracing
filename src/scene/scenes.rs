@@ -6,10 +6,32 @@ use super::Camera;
 use super::HittableList;
 use crate::lib::{Color, Point3, Vec3};
 use crate::object::material::{Dielectric, Lambertian, Material, Metal};
+use crate::object::texture::NoiseTexture;
+use crate::object::texture::SolidColor;
 use crate::object::texture::{CheckerTexture, StripeTexture};
 use crate::object::{MovingSphere, Sphere};
 
 pub type Scene = (f64, HittableList, Camera);
+
+fn standard_camera() -> Camera {
+	let from = Point3::new(13.0, 2.0, 3.0);
+	let at = Point3::zero();
+	let dist = 10.0;
+	let aperture = 0.1;
+	let aspect = 3.0 / 2.0;
+
+	Camera::new(
+		from,
+		at,
+		Vec3::new(0.0, 1.0, 0.0),
+		20.0,
+		aspect,
+		aperture,
+		dist,
+		0.0,
+		1.0,
+	)
+}
 
 pub fn figure19_scene() -> Scene {
 	let mut world = HittableList::new();
@@ -203,23 +225,25 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 		material3,
 	)));
 
-	let from = Point3::new(13.0, 2.0, 3.0);
-	let at = Point3::zero();
-	let dist = 10.0;
-	let aperture = 0.1;
-	let aspect = 3.0 / 2.0;
+	(1.5, world, standard_camera())
+}
 
-	let cam = Camera::new(
-		from,
-		at,
-		Vec3::new(0.0, 1.0, 0.0),
-		20.0,
-		aspect,
-		aperture,
-		dist,
-		0.0,
-		1.0,
-	);
+pub fn perlin_spheres<R: Rng + ?Sized>(rng: &mut R) -> Scene {
+	let mut objects = HittableList::new();
+	let white = Arc::new(SolidColor::new(Color::new(1.0, 1.0, 1.0)));
+	let black = Arc::new(SolidColor::new(Color::zero()));
+	let perlin = Arc::new(NoiseTexture::new(rng, white, black));
+	let material = Arc::new(Lambertian::new(perlin));
 
-	(aspect, world, cam)
+	objects.add(Arc::new(Sphere::new(
+		Point3::new(0.0, -1000.0, 0.0),
+		1000.0,
+		material.clone(),
+	)));
+	objects.add(Arc::new(Sphere::new(
+		Point3::new(0.0, 2.0, 0.0),
+		2.0,
+		material.clone(),
+	)));
+	(1.5, objects, standard_camera())
 }

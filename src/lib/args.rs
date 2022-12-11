@@ -23,6 +23,7 @@ pub enum WhichScene {
 	Tuesday,
 	Figure19,
 	Refraction,
+	Perlin,
 }
 
 impl FromStr for WhichScene {
@@ -34,6 +35,7 @@ impl FromStr for WhichScene {
 			"tuesday" => Ok(Self::Tuesday),
 			"figure19" => Ok(Self::Figure19),
 			"refraction" => Ok(Self::Refraction),
+			"perlin" => Ok(Self::Perlin),
 			_ => Err(format!("unknown scene: {}", s)),
 		}
 	}
@@ -100,6 +102,8 @@ pub fn show_help() {
 			"      figure 19 from Ray Tracing in One Weekend; three spheres with different materials\n",
 			"    refraction:\n",
 			"      a series of spheres lowering into a refractive material\n",
+			"    perlin:\n",
+			"      two spheres with Perlin noise\n",
 			"    default: weekend\n",
 		),
 		std::env::args_os()

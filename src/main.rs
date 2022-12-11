@@ -81,6 +81,7 @@ fn main() -> io::Result<()> {
 		WhichScene::Tuesday => scenes::random_scene(&mut rng, true, false),
 		WhichScene::Figure19 => scenes::figure19_scene(),
 		WhichScene::Refraction => scenes::refraction_scene(),
+		WhichScene::Perlin => scenes::perlin_spheres(&mut rng),
 	};
 	let world = Arc::new(
 		BvhNode::new(&mut rng, world.as_ref(), 0.0, 1.0).unwrap_or_else(|e| {
