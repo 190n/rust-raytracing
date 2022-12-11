@@ -1,5 +1,3 @@
-use std::f64::consts::PI;
-
 use rand::Rng;
 
 use crate::lib::{Point3, Ray, Vec3};
@@ -18,10 +16,6 @@ pub struct Camera {
 	aspect_ratio: f64,
 }
 
-fn degrees_to_radians(degrees: f64) -> f64 {
-	degrees * PI / 180.0
-}
-
 impl Camera {
 	/// vfov: vertical field of view in degrees
 	pub fn new(
@@ -35,7 +29,7 @@ impl Camera {
 		time0: f64,
 		time1: f64,
 	) -> Self {
-		let theta = degrees_to_radians(vfov);
+		let theta = vfov.to_radians();
 		let h = f64::tan(theta / 2.0);
 		let viewport_height = 2.0 * h;
 		let viewport_width = aspect_ratio * viewport_height;
