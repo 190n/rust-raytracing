@@ -6,7 +6,7 @@ use rand::{Rng, RngCore};
 use super::texture::SolidColor;
 use super::HitRecord;
 use super::Texture;
-use crate::lib::{Color, Ray, Vec3};
+use crate::lib::{Color, Point3, Ray, Vec3};
 
 pub struct ScatterResult {
 	pub attenuation: Color,
@@ -15,6 +15,11 @@ pub struct ScatterResult {
 
 pub trait Material: Debug + Sync + Send {
 	fn scatter(&self, rng: &mut dyn RngCore, r_in: &Ray, rec: &HitRecord) -> Option<ScatterResult>;
+	fn emitted(&self, u: f64, v: f64, p: Point3) -> Color {
+		// mark as unused without underscores in the signature
+		(u, v, p);
+		Color::zero()
+	}
 }
 
 #[derive(Debug)]
@@ -123,5 +128,37 @@ impl Material for Dielectric {
 			attenuation: self.color,
 			scattered: Ray::new(rec.p, direction, r_in.time()),
 		})
+	}
+}
+
+#[derive(Debug)]
+pub struct DiffuseLight {
+	emit: Arc<dyn Texture>,
+}
+
+impl DiffuseLight {
+	pub fn new(emit: Arc<dyn Texture>) -> DiffuseLight {
+		DiffuseLight { emit }
+	}
+
+	pub fn with_color(color: Color) -> DiffuseLight {
+		DiffuseLight {
+			emit: Arc::new(SolidColor::new(color)),
+		}
+	}
+}
+
+impl Material for DiffuseLight {
+	fn scatter(
+		&self,
+		_rng: &mut dyn RngCore,
+		_r_in: &Ray,
+		_rec: &HitRecord,
+	) -> Option<ScatterResult> {
+		None
+	}
+
+	fn emitted(&self, u: f64, v: f64, p: Point3) -> Color {
+		self.emit.value(u, v, p)
 	}
 }

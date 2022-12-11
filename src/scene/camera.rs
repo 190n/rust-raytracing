@@ -15,6 +15,7 @@ pub struct Camera {
 	lens_radius: f64,
 	time0: f64,
 	time1: f64,
+	aspect_ratio: f64,
 }
 
 fn degrees_to_radians(degrees: f64) -> f64 {
@@ -58,6 +59,7 @@ impl Camera {
 			lens_radius: aperture / 2.0,
 			time0,
 			time1,
+			aspect_ratio,
 		}
 	}
 
@@ -69,5 +71,9 @@ impl Camera {
 			self.lower_left_corner + s * self.horizontal + t * self.vertical - self.origin - offset,
 			rng.gen_range(self.time0..self.time1),
 		)
+	}
+
+	pub fn aspect_ratio(&self) -> f64 {
+		self.aspect_ratio
 	}
 }

@@ -25,23 +25,27 @@ impl Tile {
 	}
 }
 
-fn ray_color(rng: &mut impl Rng, r: Ray, world: &dyn Hittable, depth: i32) -> Color {
+fn ray_color(
+	rng: &mut impl Rng,
+	r: Ray,
+	background: Color,
+	world: &dyn Hittable,
+	depth: i32,
+) -> Color {
 	if depth <= 0 {
 		return Color::zero();
 	}
 
 	if let Some(rec) = world.hit(r, 0.001, f64::INFINITY) {
+		let emitted = rec.mat_ptr.emitted(rec.u, rec.v, rec.p);
 		if let Some(res) = rec.mat_ptr.scatter(rng, &r, &rec) {
-			return res.attenuation * ray_color(rng, res.scattered, world, depth - 1);
+			emitted + res.attenuation * ray_color(rng, res.scattered, background, world, depth - 1)
 		} else {
-			return Color::zero();
+			emitted
 		}
+	} else {
+		background
 	}
-
-	// background
-	let unit_direction = r.direction().unit_vector();
-	let t = 0.5 * (unit_direction.y() + 1.0);
-	return (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0);
 }
 
 /// Render a scene
@@ -53,6 +57,7 @@ pub fn render(
 	rng: &mut impl Rng,
 	world: Arc<dyn Hittable>,
 	cam: Camera,
+	background: Color,
 	(width, height): (usize, usize),
 	samples_per_pixel: usize,
 	max_depth: usize,
@@ -102,7 +107,7 @@ pub fn render(
 					let u = (i as f64 + rng.gen::<f64>()) / (width - 1) as f64;
 					let v = (j as f64 + rng.gen::<f64>()) / (height - 1) as f64;
 					let r = cam.get_ray(rng, u, v);
-					pixel_color += ray_color(rng, r, world.as_ref(), max_depth as i32);
+					pixel_color += ray_color(rng, r, background, world.as_ref(), max_depth as i32);
 				}
 				tile.pixels[j - y][i - x] = pixel_color;
 				total_pixels += 1;

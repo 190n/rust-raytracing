@@ -75,7 +75,7 @@ fn main() -> io::Result<()> {
 		BufWriter::new(Box::new(io::stdout()))
 	};
 
-	let (aspect_ratio, world, cam) = match args.scene {
+	let (world, cam, background) = match args.scene {
 		WhichScene::Weekend => scenes::random_scene(&mut rng, false, false),
 		WhichScene::Gay => scenes::random_scene(&mut rng, false, true),
 		WhichScene::Tuesday => scenes::random_scene(&mut rng, true, false),
@@ -91,6 +91,7 @@ fn main() -> io::Result<()> {
 		}),
 	);
 
+	let aspect_ratio = cam.aspect_ratio();
 	let image_width = args.width;
 	let image_height = (image_width as f64 / aspect_ratio) as usize;
 	let samples_per_pixel = args.samples;
@@ -114,6 +115,7 @@ fn main() -> io::Result<()> {
 				&mut thread_rng,
 				w,
 				cam,
+				background,
 				(image_width, image_height),
 				samples_per_pixel,
 				max_depth,

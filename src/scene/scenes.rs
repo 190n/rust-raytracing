@@ -13,7 +13,11 @@ use crate::object::texture::SolidColor;
 use crate::object::texture::{CheckerTexture, FunctionTexture, StripeTexture};
 use crate::object::{MovingSphere, Sphere};
 
-pub type Scene = (f64, HittableList, Camera);
+pub type Scene = (HittableList, Camera, Color);
+
+fn sky() -> Color {
+	Color::new(0.7, 0.8, 1.0)
+}
 
 fn standard_camera() -> Camera {
 	let from = Point3::new(13.0, 2.0, 3.0);
@@ -86,7 +90,7 @@ pub fn figure19_scene() -> Scene {
 		0.0,
 		1.0,
 	);
-	(aspect, world, cam)
+	(world, cam, sky())
 }
 
 pub fn refraction_scene() -> Scene {
@@ -122,7 +126,7 @@ pub fn refraction_scene() -> Scene {
 		0.0,
 		1.0,
 	);
-	(aspect, world, cam)
+	(world, cam, sky())
 }
 
 pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) -> Scene {
@@ -221,7 +225,7 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 		material3,
 	)));
 
-	(1.5, world, standard_camera())
+	(world, standard_camera(), sky())
 }
 
 pub fn perlin_spheres<R: Rng + ?Sized>(rng: &mut R) -> Scene {
@@ -250,7 +254,6 @@ pub fn perlin_spheres<R: Rng + ?Sized>(rng: &mut R) -> Scene {
 		material2,
 	)));
 	(
-		1.5,
 		world,
 		Camera::new(
 			Point3::new(13.0, 2.0, 3.0),
@@ -263,6 +266,7 @@ pub fn perlin_spheres<R: Rng + ?Sized>(rng: &mut R) -> Scene {
 			0.0,
 			1.0,
 		),
+		sky(),
 	)
 }
 
@@ -273,7 +277,6 @@ pub fn earth() -> ImageResult<Scene> {
 	let globe = Arc::new(Sphere::new(Point3::zero(), 2.0, earth_mat));
 	world.add(globe);
 	Ok((
-		1.5,
 		world,
 		Camera::new(
 			Point3::new(14.0, 0.0, 0.0),
@@ -286,5 +289,6 @@ pub fn earth() -> ImageResult<Scene> {
 			0.0,
 			1.0,
 		),
+		sky(),
 	))
 }
