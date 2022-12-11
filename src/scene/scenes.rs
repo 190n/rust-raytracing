@@ -230,9 +230,9 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 
 pub fn perlin_spheres<R: Rng + ?Sized>(rng: &mut R) -> Scene {
 	let mut objects = HittableList::new();
-	let white = Arc::new(SolidColor::new(Color::new(1.0, 1.0, 1.0)));
 	let black = Arc::new(SolidColor::new(Color::zero()));
-	let perlin = Arc::new(NoiseTexture::new(rng, white, black, 4.0));
+	let white = Arc::new(SolidColor::new(Color::new(1.0, 1.0, 1.0)));
+	let perlin = Arc::new(NoiseTexture::new(rng, black, white, 4.0, 7));
 	let material = Arc::new(Lambertian::new(perlin));
 
 	objects.add(Arc::new(Sphere::new(

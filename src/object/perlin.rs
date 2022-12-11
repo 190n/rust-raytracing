@@ -1,12 +1,12 @@
 use rand::Rng;
 
-use crate::lib::Point3;
+use crate::lib::{Point3, Vec3};
 
 const POINT_COUNT: usize = 256;
 
 #[derive(Debug)]
 pub struct Perlin {
-	floats: Vec<f64>,
+	vecs: Vec<Vec3>,
 	perm_x: Vec<usize>,
 	perm_y: Vec<usize>,
 	perm_z: Vec<usize>,
@@ -14,13 +14,13 @@ pub struct Perlin {
 
 impl Perlin {
 	pub fn new<R: Rng + ?Sized>(rng: &mut R) -> Perlin {
-		let mut floats = vec![0.0; POINT_COUNT];
+		let mut vecs = vec![Vec3::zero(); POINT_COUNT];
 		for i in 0..POINT_COUNT {
-			floats[i] = rng.gen();
+			vecs[i] = Vec3::random_range(rng, -1.0, 1.0).unit_vector();
 		}
 
 		Perlin {
-			floats,
+			vecs,
 			perm_x: Perlin::generate_perm(rng),
 			perm_y: Perlin::generate_perm(rng),
 			perm_z: Perlin::generate_perm(rng),
@@ -32,27 +32,37 @@ impl Perlin {
 		let v = p.y() - p.y().floor();
 		let w = p.z() - p.z().floor();
 
-		let u = u * u * (3.0 - 2.0 * u);
-		let v = v * v * (3.0 - 2.0 * v);
-		let w = w * w * (3.0 - 2.0 * w);
-
 		let i = p.x().floor() as isize;
 		let j = p.y().floor() as isize;
 		let k = p.z().floor() as isize;
 
-		let mut c = [[[0.0; 2]; 2]; 2];
+		let mut c = [[[Vec3::zero(); 2]; 2]; 2];
 
 		for di in 0..2isize {
 			for dj in 0..2isize {
 				for dk in 0..2isize {
-					c[di as usize][dj as usize][dk as usize] = self.floats[self.perm_x
+					c[di as usize][dj as usize][dk as usize] = self.vecs[self.perm_x
 						[(i + di).rem_euclid(POINT_COUNT as isize) as usize]
 						^ self.perm_y[(j + dj).rem_euclid(POINT_COUNT as isize) as usize]
 						^ self.perm_z[(k + dk).rem_euclid(POINT_COUNT as isize) as usize]];
 				}
 			}
 		}
-		Perlin::trilinear_interp(c, u, v, w)
+		Perlin::interp(c, u, v, w)
+	}
+
+	pub fn turbulence(&self, p: Point3, depth: usize) -> f64 {
+		let mut acc = 0.0;
+		let mut temp_p = p;
+		let mut weight = 1.0;
+
+		for _ in 0..depth {
+			acc += weight * self.noise(temp_p);
+			weight *= 0.5;
+			temp_p *= 2.0;
+		}
+
+		acc.abs()
 	}
 
 	fn generate_perm<R: Rng + ?Sized>(rng: &mut R) -> Vec<usize> {
@@ -71,16 +81,21 @@ impl Perlin {
 		}
 	}
 
-	fn trilinear_interp(c: [[[f64; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
+	fn interp(c: [[[Vec3; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
+		let u = u * u * (3.0 - 2.0 * u);
+		let v = v * v * (3.0 - 2.0 * v);
+		let w = w * w * (3.0 - 2.0 * w);
+
 		let mut acc = 0.0;
 		for i in 0..2 {
 			for j in 0..2 {
 				for k in 0..2 {
 					let (i_f, j_f, k_f) = (i as f64, j as f64, k as f64);
+					let weight = Vec3::new(u - i_f, v - j_f, w - k_f);
 					acc += (i_f * u + (1.0 - i_f) * (1.0 - u))
 						* (j_f * v + (1.0 - j_f) * (1.0 - v))
 						* (k_f * w + (1.0 - k_f) * (1.0 - w))
-						* c[i][j][k];
+						* c[i][j][k].dot(weight);
 				}
 			}
 		}
