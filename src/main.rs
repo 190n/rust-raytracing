@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io::{self, BufWriter, Write};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread::{self, JoinHandle};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
@@ -32,6 +32,25 @@ impl Display for RayRate {
 			(self.0, "")
 		};
 		write!(f, "{:6.2} {}Ray/s", measurement, prefix)?;
+		Ok(())
+	}
+}
+
+struct Eta(Duration);
+
+impl Display for Eta {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		let total_secs = self.0.as_secs();
+		let hours = total_secs / 3600;
+		let mins = (total_secs % 3600) / 60;
+		let secs = total_secs % 60;
+		if hours > 0 {
+			write!(f, "{}:{:02}:{:02}", hours, mins, secs)?;
+		} else if mins > 0 {
+			write!(f, "{}:{:02}", mins, secs)?;
+		} else {
+			write!(f, "{}", secs)?;
+		}
 		Ok(())
 	}
 }
@@ -104,6 +123,7 @@ fn main() -> io::Result<()> {
 	drop(send);
 
 	let mut pixels_so_far = 0;
+	let start_time = Instant::now();
 
 	while let Ok(tile) = recv.recv() {
 		for i in tile.y..(tile.y + TILE_SIZE) {
@@ -118,9 +138,13 @@ fn main() -> io::Result<()> {
 			pixels_so_far += width;
 		}
 
+		let progress = pixels_so_far as f64 / (image_width * image_height) as f64;
+		let elapsed = start_time.elapsed();
+		let remaining = (elapsed.div_f64(progress)) - elapsed;
 		eprint!(
-			"\rprogress: {:6.2}%",
-			pixels_so_far as f64 / (image_width * image_height) as f64 * 100.0
+			"\rprogress: {:6.2}% | eta: {}s  ",
+			progress * 100.0,
+			Eta(remaining),
 		);
 	}
 
