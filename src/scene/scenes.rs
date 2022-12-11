@@ -6,11 +6,11 @@ use rand::Rng;
 use super::Camera;
 use super::HittableList;
 use crate::lib::{Color, Point3, Vec3};
-use crate::object::material::{Dielectric, Lambertian, Material, Metal};
+use crate::object::material::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
 use crate::object::texture::{
 	CheckerTexture, FunctionTexture, ImageTexture, NoiseTexture, SolidColor, StripeTexture, Texture,
 };
-use crate::object::{MovingSphere, Sphere};
+use crate::object::{MovingSphere, Sphere, XYRect, XZRect, YZRect};
 
 pub type Scene = (HittableList, Camera, Color);
 
@@ -293,4 +293,55 @@ pub fn earth() -> ImageResult<Scene> {
 		),
 		sky(),
 	))
+}
+
+pub fn cornell_box() -> Scene {
+	let mut world = HittableList::new();
+
+	let red = Arc::new(Lambertian::with_color(Color::new(0.65, 0.05, 0.05)));
+	let white = Arc::new(Lambertian::with_color(Color::new(0.73, 0.73, 0.73)));
+	let green = Arc::new(Lambertian::with_color(Color::new(0.12, 0.45, 0.15)));
+	let light = Arc::new(DiffuseLight::with_color(Color::new(15.0, 15.0, 15.0)));
+
+	world.add(Arc::new(YZRect::new(0.0, 555.0, 0.0, 555.0, 555.0, green)));
+	world.add(Arc::new(YZRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
+	world.add(Arc::new(XZRect::new(
+		213.0, 343.0, 227.0, 332.0, 554.0, light,
+	)));
+	world.add(Arc::new(XZRect::new(
+		0.0,
+		555.0,
+		0.0,
+		555.0,
+		0.0,
+		white.clone(),
+	)));
+	world.add(Arc::new(XZRect::new(
+		0.0,
+		555.0,
+		0.0,
+		555.0,
+		555.0,
+		white.clone(),
+	)));
+	world.add(Arc::new(XYRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white)));
+
+	let from = Point3::new(278.0, 278.0, -800.0);
+	let to = Point3::new(278.0, 278.0, 0.0);
+
+	(
+		world,
+		Camera::new(
+			from,
+			to,
+			Vec3::new(0.0, 1.0, 0.0),
+			40.0,
+			1.0,
+			0.1,
+			(to - from).length(),
+			0.0,
+			1.0,
+		),
+		Color::zero(),
+	)
 }
