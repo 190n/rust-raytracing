@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::f64::consts::PI;
 use std::fmt::Debug;
 use std::path::Path;
@@ -193,7 +194,10 @@ impl Texture for NoiseTexture {
 		let low = self.low.value(u, v, p);
 		let high = self.high.value(u, v, p);
 		let value = 0.5
-			* (1.0 + f64::sin(self.scale * p.z() + 10.0 * self.noise.turbulence(p, self.depth)));
+			* (1.0
+				+ f64::sin(
+					self.scale * self.noise.noise(p) + 10.0 * self.noise.turbulence(p, self.depth),
+				));
 		low + (high - low) * value
 	}
 }
@@ -226,5 +230,29 @@ impl Texture for ImageTexture {
 			},
 			_ => panic!("bad image type: {:?}", self.image.color()),
 		}
+	}
+}
+
+pub struct FunctionTexture<F: Fn(Color, f64, f64, Point3) -> Color + Send + Sync> {
+	func: F,
+	tex: Arc<dyn Texture>,
+}
+
+impl<F: Fn(Color, f64, f64, Point3) -> Color + Send + Sync> Debug for FunctionTexture<F> {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "FunctionTexture {{ {:?} }}", self.tex)?;
+		Ok(())
+	}
+}
+
+impl<F: Fn(Color, f64, f64, Point3) -> Color + Send + Sync> FunctionTexture<F> {
+	pub fn new(func: F, tex: Arc<dyn Texture>) -> Self {
+		Self { func, tex }
+	}
+}
+
+impl<F: Fn(Color, f64, f64, Point3) -> Color + Send + Sync> Texture for FunctionTexture<F> {
+	fn value(&self, u: f64, v: f64, p: Point3) -> Color {
+		(self.func)(self.tex.value(u, v, p), u, v, p)
 	}
 }

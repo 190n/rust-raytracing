@@ -10,7 +10,7 @@ use crate::object::material::{Dielectric, Lambertian, Material, Metal};
 use crate::object::texture::ImageTexture;
 use crate::object::texture::NoiseTexture;
 use crate::object::texture::SolidColor;
-use crate::object::texture::{CheckerTexture, StripeTexture};
+use crate::object::texture::{CheckerTexture, FunctionTexture, StripeTexture};
 use crate::object::{MovingSphere, Sphere};
 
 pub type Scene = (f64, HittableList, Camera);
@@ -228,20 +228,42 @@ pub fn perlin_spheres<R: Rng + ?Sized>(rng: &mut R) -> Scene {
 	let mut world = HittableList::new();
 	let black = Arc::new(SolidColor::new(Color::zero()));
 	let white = Arc::new(SolidColor::new(Color::new(1.0, 1.0, 1.0)));
-	let perlin = Arc::new(NoiseTexture::new(rng, black, white, 4.0, 7));
-	let material = Arc::new(Lambertian::new(perlin));
+	let perlin1 = Arc::new(NoiseTexture::new(rng, black.clone(), white.clone(), 4.0, 7));
+	let perlin2 = Arc::new(FunctionTexture::new(
+		|c, _u, _v, _p| {
+			let v = c.x();
+			Color::new(0.0, 0.1, 0.3) + v.powi(15) * Color::new(1.0, 0.9, 0.7)
+		},
+		Arc::new(NoiseTexture::new(rng, black, white, 10.0, 50)),
+	));
+	let material1 = Arc::new(Metal::new(perlin1, 0.3));
+	let material2 = Arc::new(Lambertian::new(perlin2));
 
 	world.add(Arc::new(Sphere::new(
 		Point3::new(0.0, -1000.0, 0.0),
 		1000.0,
-		material.clone(),
+		material1,
 	)));
 	world.add(Arc::new(Sphere::new(
 		Point3::new(0.0, 2.0, 0.0),
 		2.0,
-		material.clone(),
+		material2,
 	)));
-	(1.5, world, standard_camera())
+	(
+		1.5,
+		world,
+		Camera::new(
+			Point3::new(13.0, 2.0, 3.0),
+			Point3::zero(),
+			Vec3::new(0.0, 1.0, 0.0),
+			45.0,
+			1.5,
+			0.0,
+			1.0,
+			0.0,
+			1.0,
+		),
+	)
 }
 
 pub fn earth() -> ImageResult<Scene> {
