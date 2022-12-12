@@ -11,9 +11,9 @@ My implementation of [_Ray Tracing in One Weekend_](https://raytracing.github.io
 - [x] BVH
 - [x] motion blur
 - [x] better multithreading (a queue of tiles instead of using fewer samples)
-- [ ] textures (solid, noise, images)
-- [ ] rectangles and lights
-- [ ] instances
+- [x] textures (solid, noise, images)
+- [x] rectangles and lights
+- [x] instances
 - [ ] volumes
 - [ ] final scene from _The Next Week_
 - [ ] color management
