@@ -83,6 +83,7 @@ fn main() -> io::Result<()> {
 		WhichScene::Earth => scenes::earth().expect("failed to load texture"),
 		WhichScene::Cornell => scenes::cornell_box(),
 		WhichScene::Bisexual => scenes::bisexual_lighting(),
+		WhichScene::Week => scenes::week(&mut rng).expect("failed to load texture"),
 	};
 	let world = Arc::new(
 		BvhNode::new(&mut rng, world.as_ref(), 0.0, 1.0).unwrap_or_else(|e| {

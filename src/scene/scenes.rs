@@ -3,6 +3,7 @@ use std::sync::Arc;
 use image::ImageResult;
 use rand::Rng;
 
+use super::BvhNode;
 use super::Camera;
 use super::HittableList;
 use crate::lib::{Color, Point3, Vec3};
@@ -94,10 +95,7 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 							rng.gen_range(0.0..0.5),
 						))
 					} else {
-						Arc::new(Dielectric {
-							ir: 1.5,
-							color: Color::random_range(rng, 0.5, 1.0),
-						})
+						Arc::new(Dielectric { ir: 1.5 })
 					}
 				};
 
@@ -118,10 +116,7 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 		}
 	}
 
-	let material1 = Arc::new(Dielectric {
-		ir: 1.5,
-		color: Color::new(1.0, 1.0, 1.0),
-	});
+	let material1 = Arc::new(Dielectric { ir: 1.5 });
 	world.add(Arc::new(Sphere::new(
 		Point3::new(0.0, 1.0, 0.0),
 		1.0,
@@ -302,10 +297,7 @@ pub fn bisexual_lighting() -> Scene {
 	world.add(Arc::new(Sphere::new(
 		Point3::new(400.0, 80.0, 100.0),
 		50.0,
-		Arc::new(Dielectric {
-			ir: 1.5,
-			color: Color::new(1.0, 1.0, 1.0),
-		}),
+		Arc::new(Dielectric { ir: 1.5 }),
 	)));
 
 	let mist = Arc::new(SolidColor::new(Color::new(0.0, 0.0, 0.5)));
@@ -320,4 +312,141 @@ pub fn bisexual_lighting() -> Scene {
 		mist,
 	)));
 	(world, cam, background)
+}
+
+pub fn week<R: Rng + ?Sized>(rng: &mut R) -> ImageResult<Scene> {
+	let mut world = HittableList::new();
+	let ground = Arc::new(Lambertian::with_color(Color::new(0.48, 0.83, 0.53)));
+
+	for i in 0..20 {
+		for j in 0..20 {
+			let w = 100.0;
+			let x0 = -1000.0 + i as f64 * w;
+			let z0 = -1000.0 + j as f64 * w;
+			let y0 = 0.0;
+			let x1 = x0 + w;
+			let y1 = rng.gen_range(1.0..101.0);
+			let z1 = z0 + w;
+			world.add(Arc::new(Block::new(
+				Point3::new(x0, y0, z0),
+				Point3::new(x1, y1, z1),
+				ground.clone(),
+			)));
+		}
+	}
+
+	let light = Arc::new(DiffuseLight::with_color(Color::new(7.0, 7.0, 7.0)));
+	world.add(Arc::new(XZRect::new(
+		123.0, 423.0, 147.0, 412.0, 554.0, light,
+	)));
+
+	let center1 = Point3::new(400.0, 400.0, 200.0);
+	let center2 = center1 + Vec3::new(30.0, 0.0, 0.0);
+	let moving_sphere_mat = Arc::new(Lambertian::with_color(Color::new(0.7, 0.3, 0.1)));
+	world.add(Arc::new(MovingSphere::new(
+		center1,
+		center2,
+		0.0,
+		1.0,
+		50.0,
+		moving_sphere_mat,
+	)));
+
+	world.add(Arc::new(Sphere::new(
+		Point3::new(260.0, 150.0, 45.0),
+		50.0,
+		Arc::new(Dielectric { ir: 1.5 }),
+	)));
+	world.add(Arc::new(Sphere::new(
+		Point3::new(0.0, 150.0, 145.0),
+		50.0,
+		Arc::new(Metal::with_color(Color::new(0.8, 0.8, 0.9), 1.0)),
+	)));
+
+	let boundary = Arc::new(Sphere::new(
+		Point3::new(360.0, 150.0, 145.0),
+		70.0,
+		Arc::new(Dielectric { ir: 1.5 }),
+	));
+	world.add(boundary.clone());
+	world.add(Arc::new(ConstantMedium::with_color(
+		boundary,
+		0.2,
+		Color::new(0.2, 0.4, 0.9),
+	)));
+	let boundary2 = Arc::new(Sphere::new(
+		Point3::zero(),
+		5000.0,
+		Arc::new(Dielectric { ir: f64::NAN }),
+	));
+	world.add(Arc::new(ConstantMedium::with_color(
+		boundary2,
+		0.0001,
+		Color::new(1.0, 1.0, 1.0),
+	)));
+
+	let emat = Arc::new(Lambertian::new(Arc::new(ImageTexture::new(
+		"textures/earthmap.jpg",
+	)?)));
+	world.add(Arc::new(Sphere::new(
+		Point3::new(400.0, 200.0, 400.0),
+		100.0,
+		emat,
+	)));
+	let pertext = Arc::new(NoiseTexture::new(
+		rng,
+		Arc::new(SolidColor::new(Color::zero())),
+		Arc::new(SolidColor::new(Color::new(1.0, 1.0, 1.0))),
+		0.1,
+		7,
+	));
+	world.add(Arc::new(Sphere::new(
+		Point3::new(220.0, 280.0, 300.0),
+		80.0,
+		Arc::new(Lambertian::new(pertext)),
+	)));
+
+	let mut spheres = HittableList::new();
+	let white = Arc::new(Lambertian::with_color(Color::new(0.73, 0.73, 0.73)));
+	for i in 0..1000 {
+		spheres.add(Arc::new(Sphere::new(
+			Point3::random_range(rng, 0.0, 165.0),
+			10.0,
+			if i < 50 {
+				Arc::new(DiffuseLight::with_color(Color::random_range(
+					rng, 0.0, 50.0,
+				)))
+			} else {
+				white.clone()
+			},
+		)));
+	}
+	world.add(Arc::new(Translate::new(
+		Arc::new(RotateY::new(
+			Arc::new(
+				BvhNode::new(rng, spheres.as_ref(), 0.0, 1.0)
+					.expect("spheres all have bounding boxes"),
+			),
+			15.0,
+		)),
+		Vec3::new(-100.0, 270.0, 395.0),
+	)));
+
+	let from = Point3::new(478.0, 278.0, -600.0);
+	let at = Point3::new(278.0, 278.0, 0.0);
+	Ok((
+		world,
+		Camera::new(
+			from,
+			at,
+			Vec3::new(0.0, 1.0, 0.0),
+			40.0,
+			1.0,
+			0.1,
+			(at - from).length(),
+			0.0,
+			1.0,
+		),
+		Color::zero(),
+	))
 }

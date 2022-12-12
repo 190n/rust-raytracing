@@ -25,6 +25,7 @@ pub enum WhichScene {
 	Earth,
 	Cornell,
 	Bisexual,
+	Week,
 }
 
 impl FromStr for WhichScene {
@@ -38,6 +39,7 @@ impl FromStr for WhichScene {
 			"earth" => Ok(Self::Earth),
 			"cornell" => Ok(Self::Cornell),
 			"bisexual" => Ok(Self::Bisexual),
+			"week" => Ok(Self::Week),
 			_ => Err(format!("unknown scene: {}", s)),
 		}
 	}
@@ -108,6 +110,8 @@ pub fn show_help() {
 			"      the Cornell box\n",
 			"    bisexual:\n",
 			"      the Cornell box but with bisexual lighting\n",
+			"    week:\n",
+			"      final scene from Ray Tracing: The Next Week\n",
 			"    default: weekend\n",
 		),
 		std::env::args_os()
