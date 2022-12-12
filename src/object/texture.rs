@@ -1,5 +1,6 @@
 use std::f64::consts::PI;
 use std::fmt::{self, Debug, Formatter};
+use std::ops::Mul;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -61,7 +62,7 @@ impl Texture for CheckerTexture {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StripeTexture {
 	stripes: Vec<Arc<dyn Texture>>,
 	sphere_adjust: bool,
@@ -69,7 +70,7 @@ pub struct StripeTexture {
 
 macro_rules! flag_cell {
 	($colors: expr, $sphere_adjust: expr) => {{
-		static FLAG: OnceCell<Arc<dyn Texture>> = OnceCell::new();
+		static FLAG: OnceCell<Arc<StripeTexture>> = OnceCell::new();
 		FLAG.get_or_init(|| Arc::new(StripeTexture::with_colors($colors, $sphere_adjust)))
 			.clone()
 	}};
@@ -125,27 +126,27 @@ impl StripeTexture {
 		}
 	}
 
-	pub fn trans() -> Arc<dyn Texture> {
+	pub fn trans() -> Arc<StripeTexture> {
 		flag_cell!(&StripeTexture::trans_colors(), false)
 	}
 
-	pub fn trans_sphere() -> Arc<dyn Texture> {
+	pub fn trans_sphere() -> Arc<StripeTexture> {
 		flag_cell!(&StripeTexture::trans_colors(), true)
 	}
 
-	pub fn rainbow() -> Arc<dyn Texture> {
+	pub fn rainbow() -> Arc<StripeTexture> {
 		flag_cell!(&StripeTexture::rainbow_colors(), false)
 	}
 
-	pub fn rainbow_sphere() -> Arc<dyn Texture> {
+	pub fn rainbow_sphere() -> Arc<StripeTexture> {
 		flag_cell!(&StripeTexture::rainbow_colors(), true)
 	}
 
-	pub fn enby() -> Arc<dyn Texture> {
+	pub fn enby() -> Arc<StripeTexture> {
 		flag_cell!(&StripeTexture::enby_colors(), false)
 	}
 
-	pub fn enby_sphere() -> Arc<dyn Texture> {
+	pub fn enby_sphere() -> Arc<StripeTexture> {
 		flag_cell!(&StripeTexture::enby_colors(), true)
 	}
 }
@@ -245,3 +246,30 @@ impl<F: Fn(f64, f64, Point3) -> Color + Send + Sync> Texture for FunctionTexture
 		(self.0)(u, v, p)
 	}
 }
+
+macro_rules! mul_texture_impl {
+	($T: ty) => {
+		impl Mul<f64> for $T {
+			type Output = FunctionTexture<Box<dyn Fn(f64, f64, Point3) -> Color + Send + Sync>>;
+			fn mul(self, rhs: f64) -> Self::Output {
+				FunctionTexture(Box::new(move |u, v, p| self.value(u, v, p) * rhs))
+			}
+		}
+	};
+
+	($T: ident, $P: path) => {
+		impl<T: $P + Send + Sync + 'static> Mul<f64> for $T<T> {
+			type Output = FunctionTexture<Box<dyn Fn(f64, f64, Point3) -> Color + Send + Sync>>;
+			fn mul(self, rhs: f64) -> Self::Output {
+				FunctionTexture(Box::new(move |u, v, p| self.value(u, v, p) * rhs))
+			}
+		}
+	};
+}
+
+mul_texture_impl!(SolidColor);
+mul_texture_impl!(CheckerTexture);
+mul_texture_impl!(StripeTexture);
+mul_texture_impl!(NoiseTexture);
+mul_texture_impl!(ImageTexture);
+mul_texture_impl!(FunctionTexture, Fn(f64, f64, Point3) -> Color);
