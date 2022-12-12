@@ -79,11 +79,10 @@ fn main() -> io::Result<()> {
 		WhichScene::Weekend => scenes::random_scene(&mut rng, false, false),
 		WhichScene::Gay => scenes::random_scene(&mut rng, false, true),
 		WhichScene::Tuesday => scenes::random_scene(&mut rng, true, false),
-		WhichScene::Figure19 => scenes::figure19_scene(),
-		WhichScene::Refraction => scenes::refraction_scene(),
 		WhichScene::Perlin => scenes::perlin_spheres(&mut rng),
 		WhichScene::Earth => scenes::earth().expect("failed to load texture"),
 		WhichScene::Cornell => scenes::cornell_box(),
+		WhichScene::Bisexual => scenes::bisexual_lighting(),
 	};
 	let world = Arc::new(
 		BvhNode::new(&mut rng, world.as_ref(), 0.0, 1.0).unwrap_or_else(|e| {

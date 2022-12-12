@@ -40,96 +40,6 @@ fn standard_camera() -> Camera {
 	)
 }
 
-pub fn figure19_scene() -> Scene {
-	let mut world = HittableList::new();
-	let glass = Arc::new(Dielectric {
-		ir: 1.5,
-		color: Color::new(1.0, 1.0, 1.0),
-	});
-
-	// ground
-	world.add(Arc::new(Sphere::new(
-		Point3::new(0.0, -100.5, -1.0),
-		100.0,
-		Arc::new(Lambertian::with_color(Color::new(0.8, 0.8, 0.0))),
-	)));
-	// center
-	world.add(Arc::new(Sphere::new(
-		Point3::new(0.0, 0.0, -1.0),
-		0.5,
-		Arc::new(Lambertian::with_color(Color::new(0.1, 0.2, 0.5))),
-	)));
-	// left (outer)
-	world.add(Arc::new(Sphere::new(
-		Point3::new(-1.0, 0.0, -1.0),
-		0.5,
-		glass.clone(),
-	)));
-	// left (inner)
-	world.add(Arc::new(Sphere::new(
-		Point3::new(-1.0, 0.0, -1.0),
-		-0.45,
-		glass,
-	)));
-	// right
-	world.add(Arc::new(Sphere::new(
-		Point3::new(1.0, 0.0, -1.0),
-		0.5,
-		Arc::new(Metal::with_color(Color::new(0.8, 0.6, 0.2), 0.0)),
-	)));
-
-	let aspect = 16.0 / 9.0;
-
-	let cam = Camera::new(
-		Point3::new(-2.0, 2.0, 1.0),
-		Point3::new(0.0, 0.0, -1.0),
-		Vec3::new(0.0, 1.0, 0.0),
-		20.0,
-		aspect,
-		0.0,
-		1.0,
-		0.0,
-		1.0,
-	);
-	(world, cam, sky())
-}
-
-pub fn refraction_scene() -> Scene {
-	let mut world = HittableList::new();
-	let ball_material = Arc::new(Lambertian::with_color(Color::new(0.0, 0.6, 0.0)));
-	world.add(Arc::new(Sphere::new(
-		Point3::new(0.0, -1000.0, 0.0),
-		1000.0,
-		Arc::new(Dielectric {
-			ir: 1.3,
-			color: Color::new(0.75, 0.75, 1.0),
-		}),
-	)));
-
-	for i in -5..=5 {
-		world.add(Arc::new(Sphere::new(
-			Point3::zero() + Vec3::new(0.0, 0.5 * i as f64, -2.0 * i as f64),
-			1.0,
-			ball_material.clone(),
-		)));
-	}
-
-	let aspect = 2.0;
-
-	let cam = Camera::new(
-		Point3::new(-15.0, 3.0, 0.0),
-		Point3::zero(),
-		Vec3::new(0.0, 1.0, 0.0),
-		60.0,
-		aspect,
-		0.0,
-		1.0,
-		0.0,
-		1.0,
-	);
-	(world, cam, sky())
-}
-
 pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) -> Scene {
 	let mut world = HittableList::new();
 
@@ -311,7 +221,7 @@ pub fn cornell_box() -> Scene {
 	world.add(Arc::new(YZRect::new(0.0, 555.0, 0.0, 555.0, 555.0, green)));
 	world.add(Arc::new(YZRect::new(0.0, 555.0, 0.0, 555.0, 0.0, red)));
 	world.add(Arc::new(XZRect::new(
-		213.0, 343.0, 227.0, 332.0, 554.0, light,
+		213.0, 343.0, 227.0, 332.0, 554.99, light,
 	)));
 	world.add(Arc::new(XZRect::new(
 		0.0,
@@ -374,4 +284,27 @@ pub fn cornell_box() -> Scene {
 		),
 		Color::zero(),
 	)
+}
+
+pub fn bisexual_lighting() -> Scene {
+	let (mut world, cam, background) = cornell_box();
+	world.add(Arc::new(XZRect::new(
+		0.0,
+		555.0,
+		0.0,
+		555.0,
+		554.9,
+		Arc::new(DiffuseLight::new(Arc::new(
+			StripeTexture::bi().as_ref().clone() * 2.0,
+		))),
+	)));
+	world.add(Arc::new(Sphere::new(
+		Point3::new(400.0, 80.0, 100.0),
+		50.0,
+		Arc::new(Dielectric {
+			ir: 1.5,
+			color: Color::new(1.0, 1.0, 1.0),
+		}),
+	)));
+	(world, cam, background)
 }

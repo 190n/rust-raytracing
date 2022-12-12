@@ -21,11 +21,10 @@ pub enum WhichScene {
 	Weekend,
 	Gay,
 	Tuesday,
-	Figure19,
-	Refraction,
 	Perlin,
 	Earth,
 	Cornell,
+	Bisexual,
 }
 
 impl FromStr for WhichScene {
@@ -35,11 +34,10 @@ impl FromStr for WhichScene {
 			"weekend" => Ok(Self::Weekend),
 			"gay" => Ok(Self::Gay),
 			"tuesday" => Ok(Self::Tuesday),
-			"figure19" => Ok(Self::Figure19),
-			"refraction" => Ok(Self::Refraction),
 			"perlin" => Ok(Self::Perlin),
 			"earth" => Ok(Self::Earth),
 			"cornell" => Ok(Self::Cornell),
+			"bisexual" => Ok(Self::Bisexual),
 			_ => Err(format!("unknown scene: {}", s)),
 		}
 	}
@@ -102,16 +100,14 @@ pub fn show_help() {
 			"      the random spheres scene, but upgraded with features from The Next Week:\n",
 			"        - moving spheres\n",
 			"        - checkered ground texture\n",
-			"    figure19:\n",
-			"      figure 19 from Ray Tracing in One Weekend; three spheres with different materials\n",
-			"    refraction:\n",
-			"      a series of spheres lowering into a refractive material\n",
 			"    perlin:\n",
 			"      two spheres with Perlin noise\n",
 			"    earth:\n",
 			"      a globe with the texture of the Earth\n",
 			"    cornell:\n",
 			"      the Cornell box\n",
+			"    bisexual:\n",
+			"      the Cornell box but with bisexual lighting\n",
 			"    default: weekend\n",
 		),
 		std::env::args_os()
