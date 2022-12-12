@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use rand::RngCore;
+
 use super::{HitRecord, Hittable, Material, Sphere};
 use crate::lib::{Point3, Ray, Vec3};
 use crate::scene::Aabb;
@@ -55,7 +57,8 @@ impl Hittable for MovingSphere {
 		))
 	}
 
-	fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
-		Sphere::new(self.center(r.time()), self.radius, self.mat_ptr.clone()).hit(r, t_min, t_max)
+	fn hit(&self, rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+		Sphere::new(self.center(r.time()), self.radius, self.mat_ptr.clone())
+			.hit(rng, r, t_min, t_max)
 	}
 }

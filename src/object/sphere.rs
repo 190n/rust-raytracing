@@ -1,6 +1,8 @@
 use std::f64::consts::PI;
 use std::sync::Arc;
 
+use rand::RngCore;
+
 use super::{HitRecord, Hittable, Material};
 use crate::lib::{Point3, Ray, Vec3};
 use crate::scene::Aabb;
@@ -31,7 +33,7 @@ impl Sphere {
 }
 
 impl Hittable for Sphere {
-	fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+	fn hit(&self, _rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
 		let oc = r.origin() - self.center;
 		let a = r.direction().length_squared();
 		let half_b = Vec3::dot(oc, r.direction());

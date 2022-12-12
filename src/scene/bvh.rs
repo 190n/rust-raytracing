@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::sync::Arc;
 
-use rand::Rng;
+use rand::{Rng, RngCore};
 
 use crate::lib::Ray;
 use crate::object::{HitRecord, Hittable};
@@ -95,17 +95,18 @@ impl BvhNode {
 }
 
 impl Hittable for BvhNode {
-	fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+	fn hit(&self, rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
 		if !self.bbox.hit(r, t_min, t_max) {
 			None
 		} else {
 			// check if left and right are the same node; if so, we don't need to check them both
 			if Arc::ptr_eq(&self.left, &self.right) {
-				return self.left.hit(r, t_min, t_max);
+				return self.left.hit(rng, r, t_min, t_max);
 			}
 
-			let hit_left = self.left.hit(r, t_min, t_max);
+			let hit_left = self.left.hit(rng, r, t_min, t_max);
 			let hit_right = self.right.hit(
+				rng,
 				r,
 				t_min,
 				if let Some(ref rec) = hit_left {

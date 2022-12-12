@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use rand::RngCore;
+
 use super::{HitRecord, Hittable, Material};
 use crate::lib::{Point3, Ray, Vec3};
 use crate::scene::Aabb;
@@ -28,7 +30,7 @@ impl XYRect {
 }
 
 impl Hittable for XYRect {
-	fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+	fn hit(&self, _rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
 		let t = (self.k - r.origin().z()) / r.direction().z();
 		if t < t_min || t > t_max {
 			return None;
@@ -85,7 +87,7 @@ impl XZRect {
 }
 
 impl Hittable for XZRect {
-	fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+	fn hit(&self, _rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
 		let t = (self.k - r.origin().y()) / r.direction().y();
 		if t < t_min || t > t_max {
 			return None;
@@ -142,7 +144,7 @@ impl YZRect {
 }
 
 impl Hittable for YZRect {
-	fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+	fn hit(&self, _rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
 		let t = (self.k - r.origin().x()) / r.direction().x();
 		if t < t_min || t > t_max {
 			return None;

@@ -11,7 +11,8 @@ use crate::object::texture::{
 	CheckerTexture, FunctionTexture, ImageTexture, NoiseTexture, SolidColor, StripeTexture, Texture,
 };
 use crate::object::{
-	Block, Hittable, MovingSphere, RotateY, Sphere, Translate, XYRect, XZRect, YZRect,
+	Block, ConstantMedium, Hittable, MovingSphere, RotateY, Sphere, Translate, XYRect, XZRect,
+	YZRect,
 };
 
 pub type Scene = (HittableList, Camera, Color);
@@ -305,6 +306,18 @@ pub fn bisexual_lighting() -> Scene {
 			ir: 1.5,
 			color: Color::new(1.0, 1.0, 1.0),
 		}),
+	)));
+
+	let mist = Arc::new(SolidColor::new(Color::new(0.0, 0.0, 0.5)));
+	let bogus = Arc::new(Lambertian::with_color(Color::zero()));
+	world.add(Arc::new(ConstantMedium::new(
+		Arc::new(Block::new(
+			Point3::new(100.0, 200.0, 0.0),
+			Point3::new(200.0, 300.0, 400.0),
+			bogus,
+		)),
+		0.01,
+		mist,
 	)));
 	(world, cam, background)
 }

@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use rand::RngCore;
+
 use super::{HitRecord, Hittable, Material, XYRect, XZRect, YZRect};
 use crate::lib::{Point3, Ray};
 use crate::scene::{Aabb, HittableList};
@@ -77,7 +79,7 @@ impl Hittable for Block {
 		Some(self.aabb)
 	}
 
-	fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
-		self.sides.hit(r, t_min, t_max)
+	fn hit(&self, rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+		self.sides.hit(rng, r, t_min, t_max)
 	}
 }

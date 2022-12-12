@@ -36,7 +36,7 @@ fn ray_color(
 		return Color::zero();
 	}
 
-	if let Some(rec) = world.hit(r, 0.001, f64::INFINITY) {
+	if let Some(rec) = world.hit(rng, r, 0.001, f64::INFINITY) {
 		let emitted = rec.mat_ptr.emitted(rec.u, rec.v, rec.p);
 		if let Some(res) = rec.mat_ptr.scatter(rng, &r, &rec) {
 			emitted + res.attenuation * ray_color(rng, res.scattered, background, world, depth - 1)

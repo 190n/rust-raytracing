@@ -1,6 +1,8 @@
 use std::fmt::{Debug, Display};
 use std::sync::Arc;
 
+use rand::RngCore;
+
 use super::Material;
 use crate::lib::{Point3, Ray, Vec3};
 use crate::scene::Aabb;
@@ -28,7 +30,7 @@ impl HitRecord {
 }
 
 pub trait Hittable: Sync + Send + Debug {
-	fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
+	fn hit(&self, rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
 	fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb>;
 }
 
@@ -51,13 +53,15 @@ impl Hittable for Translate {
 			.map(|bb| Aabb::new(bb.min() + self.offset, bb.max() + self.offset))
 	}
 
-	fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+	fn hit(&self, rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
 		let translated_ray = Ray::new(r.origin() - self.offset, r.direction(), r.time());
-		self.child.hit(translated_ray, t_min, t_max).map(|mut rec| {
-			rec.p += self.offset;
-			rec.set_face_normal(translated_ray, rec.normal);
-			rec
-		})
+		self.child
+			.hit(rng, translated_ray, t_min, t_max)
+			.map(|mut rec| {
+				rec.p += self.offset;
+				rec.set_face_normal(translated_ray, rec.normal);
+				rec
+			})
 	}
 }
 
@@ -110,7 +114,7 @@ impl Hittable for RotateY {
 		})
 	}
 
-	fn hit(&self, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+	fn hit(&self, rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
 		let mut origin = r.origin();
 		let mut direction = r.direction();
 
@@ -121,19 +125,21 @@ impl Hittable for RotateY {
 		direction[2] = self.sin_theta * r.direction()[0] + self.cos_theta * r.direction()[2];
 
 		let rotated_ray = Ray::new(origin, direction, r.time());
-		self.child.hit(rotated_ray, t_min, t_max).map(|mut rec| {
-			let mut p = rec.p;
-			let mut normal = rec.normal;
+		self.child
+			.hit(rng, rotated_ray, t_min, t_max)
+			.map(|mut rec| {
+				let mut p = rec.p;
+				let mut normal = rec.normal;
 
-			p[0] = self.cos_theta * rec.p[0] + self.sin_theta * rec.p[2];
-			p[2] = -self.sin_theta * rec.p[0] + self.cos_theta * rec.p[2];
+				p[0] = self.cos_theta * rec.p[0] + self.sin_theta * rec.p[2];
+				p[2] = -self.sin_theta * rec.p[0] + self.cos_theta * rec.p[2];
 
-			normal[0] = self.cos_theta * rec.normal[0] + self.sin_theta * rec.normal[2];
-			normal[2] = -self.sin_theta * rec.normal[0] + self.cos_theta * rec.normal[2];
+				normal[0] = self.cos_theta * rec.normal[0] + self.sin_theta * rec.normal[2];
+				normal[2] = -self.sin_theta * rec.normal[0] + self.cos_theta * rec.normal[2];
 
-			rec.p = p;
-			rec.set_face_normal(rotated_ray, normal);
-			rec
-		})
+				rec.p = p;
+				rec.set_face_normal(rotated_ray, normal);
+				rec
+			})
 	}
 }
