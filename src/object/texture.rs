@@ -112,6 +112,13 @@ impl StripeTexture {
 		[yellow, white, purple, gray]
 	}
 
+	fn bi_colors() -> [Color; 5] {
+		let pink = Color::from_srgb_hex(0xd60270);
+		let purple = Color::from_srgb_hex(0x9b4f96);
+		let blue = Color::from_srgb_hex(0x0038a8);
+		[pink, pink, purple, blue, blue]
+	}
+
 	/// stripes:       which textures to use
 	/// sphere_adjust: if true, adjust stripe widths so that each stripe has equal surface area on a
 	///                sphere, instead of equal height
@@ -149,12 +156,21 @@ impl StripeTexture {
 	pub fn enby_sphere() -> Arc<StripeTexture> {
 		flag_cell!(&StripeTexture::enby_colors(), true)
 	}
+
+	pub fn bi() -> Arc<StripeTexture> {
+		flag_cell!(&StripeTexture::bi_colors(), false)
+	}
+
+	pub fn bi_sphere() -> Arc<StripeTexture> {
+		flag_cell!(&StripeTexture::bi_colors(), true)
+	}
 }
 
 impl Texture for StripeTexture {
 	fn value(&self, u: f64, mut v: f64, p: Point3) -> Color {
+		v = 1.0 - v;
 		if self.sphere_adjust {
-			v = (1.0 - f64::cos(PI * (1.0 - v))) / 2.0;
+			v = (1.0 - f64::cos(PI * v)) / 2.0;
 		}
 
 		let index = ((v * self.stripes.len() as f64) as usize).clamp(0, self.stripes.len() - 1);

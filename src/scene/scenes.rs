@@ -150,6 +150,7 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 	let trans = Arc::new(Lambertian::new(StripeTexture::trans_sphere()));
 	let rainbow = Arc::new(Lambertian::new(StripeTexture::rainbow_sphere()));
 	let enby = Arc::new(Lambertian::new(StripeTexture::enby_sphere()));
+	let bi = Arc::new(Lambertian::new(StripeTexture::bi_sphere()));
 
 	for a in -11..11 {
 		for b in -11..11 {
@@ -162,12 +163,14 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 
 			if (center - Point3::new(4.0, 0.2, 0.0)).length_squared() > 0.81 {
 				let sphere_material: Arc<dyn Material> = if gay {
-					if choose_mat < 1.0 / 3.0 {
+					if choose_mat < 0.25 {
 						trans.clone()
-					} else if choose_mat < 2.0 / 3.0 {
+					} else if choose_mat < 0.5 {
 						rainbow.clone()
-					} else {
+					} else if choose_mat < 0.75 {
 						enby.clone()
+					} else {
+						bi.clone()
 					}
 				} else {
 					if choose_mat < 0.8 {
