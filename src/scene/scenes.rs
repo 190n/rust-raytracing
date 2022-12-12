@@ -10,7 +10,9 @@ use crate::object::material::{Dielectric, DiffuseLight, Lambertian, Material, Me
 use crate::object::texture::{
 	CheckerTexture, FunctionTexture, ImageTexture, NoiseTexture, SolidColor, StripeTexture, Texture,
 };
-use crate::object::{MovingSphere, Sphere, XYRect, XZRect, YZRect};
+use crate::object::{
+	Block, Hittable, MovingSphere, RotateY, Sphere, Translate, XYRect, XZRect, YZRect,
+};
 
 pub type Scene = (HittableList, Camera, Color);
 
@@ -324,7 +326,32 @@ pub fn cornell_box() -> Scene {
 		555.0,
 		white.clone(),
 	)));
-	world.add(Arc::new(XYRect::new(0.0, 555.0, 0.0, 555.0, 555.0, white)));
+	world.add(Arc::new(XYRect::new(
+		0.0,
+		555.0,
+		0.0,
+		555.0,
+		555.0,
+		white.clone(),
+	)));
+
+	let mut block1: Arc<dyn Hittable> = Arc::new(Block::new(
+		Point3::zero(),
+		Point3::new(165.0, 320.0, 165.0),
+		white.clone(),
+	));
+	block1 = Arc::new(RotateY::new(block1, 15.0));
+	block1 = Arc::new(Translate::new(block1, Vec3::new(265.0, 0.0, 295.0)));
+	world.add(block1);
+
+	let mut block2: Arc<dyn Hittable> = Arc::new(Block::new(
+		Point3::zero(),
+		Point3::new(165.0, 165.0, 165.0),
+		white,
+	));
+	block2 = Arc::new(RotateY::new(block2, -18.0));
+	block2 = Arc::new(Translate::new(block2, Vec3::new(130.0, 0.0, 65.0)));
+	world.add(block2);
 
 	let from = Point3::new(278.0, 278.0, -800.0);
 	let to = Point3::new(278.0, 278.0, 0.0);

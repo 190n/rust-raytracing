@@ -116,6 +116,14 @@ impl Vec3 {
 			return v;
 		}
 	}
+
+	pub fn min(&self, v: Vec3) -> Self {
+		Self::new(self[0].min(v[0]), self[1].min(v[1]), self[2].min(v[2]))
+	}
+
+	pub fn max(&self, v: Vec3) -> Self {
+		Self::new(self[0].max(v[0]), self[1].max(v[1]), self[2].max(v[2]))
+	}
 }
 
 impl Neg for Vec3 {
