@@ -311,6 +311,16 @@ pub fn bisexual_lighting() -> Scene {
 		0.01,
 		mist,
 	)));
+
+	world.add(Arc::new(RotateY::new(
+		Arc::new(Block::new(
+			Point3::new(150.0, 50.0, 0.0),
+			Point3::new(250.0, 300.0, 10.0),
+			Arc::new(Dielectric { ir: 1.1 }),
+		)),
+		30.0,
+	)));
+
 	(world, cam, background)
 }
 
