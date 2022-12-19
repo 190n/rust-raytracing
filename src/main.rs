@@ -1,10 +1,11 @@
 mod lib;
 mod object;
+mod output;
 mod scene;
 
 use std::fmt::{self, Display, Formatter};
 use std::fs::File;
-use std::io::{self, BufWriter, Write};
+use std::io::{self, Write};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
@@ -13,10 +14,11 @@ use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
 
 use lib::args::{self, WhichScene};
-use lib::color::write_color;
 use lib::raytracer::{render, Tile, TILE_SIZE};
-use lib::Color;
 use scene::{scenes, BvhNode};
+
+use crate::lib::color::OutputColor;
+use crate::output::{ImageWriter, PpmWriter};
 
 struct RayRate(f64);
 
@@ -69,10 +71,10 @@ fn main() -> io::Result<()> {
 	}
 	let mut rng = Xoshiro256PlusPlus::from_seed(seed);
 
-	let mut buffered: BufWriter<Box<dyn Write>> = if let Some(filename) = args.output {
-		BufWriter::new(Box::new(File::create(filename)?))
+	let output: Box<dyn Write> = if let Some(filename) = args.output {
+		Box::new(File::create(filename)?)
 	} else {
-		BufWriter::new(Box::new(io::stdout()))
+		Box::new(io::stdout())
 	};
 
 	let (world, cam, background) = match args.scene {
@@ -101,7 +103,8 @@ fn main() -> io::Result<()> {
 
 	let mut handles: Vec<JoinHandle<(Duration, usize)>> = Vec::with_capacity(num_threads);
 
-	let mut image: Vec<Vec<Color>> = vec![vec![Color::zero(); image_width]; image_height];
+	let mut image: Vec<Vec<OutputColor>> =
+		vec![vec![OutputColor(0, 0, 0); image_width]; image_height];
 	let (send, recv) = mpsc::channel::<Tile>();
 	let current_pos = Arc::new(Mutex::new((0usize, 0usize)));
 
@@ -170,14 +173,12 @@ fn main() -> io::Result<()> {
 		eprintln!("total:      {}", RayRate(total_rays_sec));
 	}
 
-	write!(buffered, "P6\n{} {}\n255\n", image_width, image_height)?;
-
+	let mut ppm = PpmWriter::new(output, (image_width, image_height), 8);
+	ppm.write_header()?;
 	for row in image {
-		for pixel in row {
-			write_color(&mut buffered, pixel, samples_per_pixel)?;
-		}
+		ppm.write_pixels(&row)?;
 	}
+	ppm.end()?;
 
-	buffered.flush()?;
 	Ok(())
 }

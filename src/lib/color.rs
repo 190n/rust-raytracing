@@ -1,8 +1,34 @@
-use std::io::{self, Write};
-
 use super::Vec3;
 
 pub type Color = Vec3;
+
+// Color (f64)
+// `-> oetf -> f64
+// `-> tonemap -> u16
+// `-> dither -> u16
+
+#[derive(Clone, Copy)]
+pub struct OutputColor(pub u16, pub u16, pub u16);
+
+pub struct Dither {
+	bits: u8,
+}
+
+impl Dither {
+	/// Create a new ditherer to reduce colors from 16 to the specified number of bits, which must
+	/// be within [1, 16].
+	pub fn new(bits: u8) -> Dither {
+		if bits > 16 || bits < 1 {
+			panic!("number of bits for dither must be between 1 and 16");
+		}
+		Dither { bits }
+	}
+
+	pub fn dither(&mut self, input: OutputColor) -> OutputColor {
+		let shift = 16 - self.bits;
+		OutputColor(input.0 >> shift, input.1 >> shift, input.2 >> shift)
+	}
+}
 
 fn srgb_to_linear(value: f64) -> f64 {
 	if value <= 0.04045 {
@@ -18,6 +44,10 @@ fn linear_to_srgb(value: f64) -> f64 {
 	} else {
 		1.055 * value.powf(1.0 / 2.4) - 0.055
 	}
+}
+
+fn clamp(sample: f64) -> u16 {
+	(65536.0 * sample.clamp(0.0, 65535.0 / 65536.0)) as u16
 }
 
 impl Color {
@@ -36,22 +66,20 @@ impl Color {
 			((code & 0x0000ff) >> 0) as u8,
 		)
 	}
-}
 
-pub fn write_color(w: &mut impl Write, color: Color, samples_per_pixel: usize) -> io::Result<()> {
-	let mut r = color.x();
-	let mut g = color.y();
-	let mut b = color.z();
+	fn oetf(&self) -> Color {
+		Color::new(
+			linear_to_srgb(self.x()),
+			linear_to_srgb(self.y()),
+			linear_to_srgb(self.z()),
+		)
+	}
 
-	let scale = 1.0 / samples_per_pixel as f64;
-	r = linear_to_srgb(r * scale);
-	g = linear_to_srgb(g * scale);
-	b = linear_to_srgb(b * scale);
+	fn clamp(&self) -> OutputColor {
+		OutputColor(clamp(self.x()), clamp(self.y()), clamp(self.z()))
+	}
 
-	let r = (256.0 * r.clamp(0.0, 0.999)) as u8;
-	let g = (256.0 * g.clamp(0.0, 0.999)) as u8;
-	let b = (256.0 * b.clamp(0.0, 0.999)) as u8;
-
-	w.write(&[r, g, b])?;
-	Ok(())
+	pub fn tonemap(&self) -> OutputColor {
+		self.oetf().clamp()
+	}
 }

@@ -7,10 +7,12 @@ use crate::lib::{Color, Ray};
 use crate::object::Hittable;
 use crate::scene::Camera;
 
+use super::color::OutputColor;
+
 pub const TILE_SIZE: usize = 16;
 
 pub struct Tile {
-	pub pixels: [[Color; TILE_SIZE]; TILE_SIZE],
+	pub pixels: [[OutputColor; TILE_SIZE]; TILE_SIZE],
 	pub x: usize,
 	pub y: usize,
 }
@@ -18,7 +20,7 @@ pub struct Tile {
 impl Tile {
 	fn new(x: usize, y: usize) -> Self {
 		Self {
-			pixels: [[Color::zero(); TILE_SIZE]; TILE_SIZE],
+			pixels: [[OutputColor(0, 0, 0); TILE_SIZE]; TILE_SIZE],
 			x,
 			y,
 		}
@@ -109,7 +111,8 @@ pub fn render(
 					let r = cam.get_ray(rng, u, v);
 					pixel_color += ray_color(rng, r, background, world.as_ref(), max_depth as i32);
 				}
-				tile.pixels[j - y][i - x] = pixel_color;
+				let factor = 1.0 / samples_per_pixel as f64;
+				tile.pixels[j - y][i - x] = (pixel_color * factor).tonemap();
 				total_pixels += 1;
 			}
 		}
