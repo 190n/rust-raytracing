@@ -16,9 +16,11 @@ use rand_xoshiro::Xoshiro256PlusPlus;
 use lib::args::{self, WhichScene};
 use lib::raytracer::{render, Tile, TILE_SIZE};
 use scene::{scenes, BvhNode};
+use time::OffsetDateTime;
 
 use crate::lib::color::OutputColor;
-use crate::output::{ImageWriter, PpmWriter};
+use crate::output::png::PngRenderingIntent;
+use crate::output::{ImageWriter, PngWriter, PpmWriter};
 
 struct RayRate(f64);
 
@@ -105,30 +107,33 @@ fn main() -> io::Result<()> {
 
 	let mut image: Vec<Vec<OutputColor>> =
 		vec![vec![OutputColor(0, 0, 0); image_width]; image_height];
-	let (send, recv) = mpsc::channel::<Tile>();
 	let current_pos = Arc::new(Mutex::new((0usize, 0usize)));
 
-	for _ in 0..num_threads {
-		let w = world.clone();
-		let mut thread_rng = Xoshiro256PlusPlus::from_seed(rng.gen());
-		let pos = current_pos.clone();
-		let q = send.clone();
-		handles.push(thread::spawn(move || {
-			render(
-				q,
-				&mut thread_rng,
-				w,
-				cam,
-				background,
-				(image_width, image_height),
-				samples_per_pixel,
-				max_depth,
-				pos,
-			)
-		}));
-	}
-
-	drop(send);
+	// sender is scoped in this block so that the main thread's sender gets dropped
+	// that way the channel is closed as soon as every worker thread has finished
+	let recv = {
+		let (send, recv) = mpsc::channel::<Tile>();
+		for _ in 0..num_threads {
+			let w = world.clone();
+			let mut thread_rng = Xoshiro256PlusPlus::from_seed(rng.gen());
+			let pos = current_pos.clone();
+			let q = send.clone();
+			handles.push(thread::spawn(move || {
+				render(
+					q,
+					&mut thread_rng,
+					w,
+					cam,
+					background,
+					(image_width, image_height),
+					samples_per_pixel,
+					max_depth,
+					pos,
+				)
+			}));
+		}
+		recv
+	};
 
 	let mut pixels_so_far = 0;
 	let start_time = Instant::now();
@@ -173,7 +178,14 @@ fn main() -> io::Result<()> {
 		eprintln!("total:      {}", RayRate(total_rays_sec));
 	}
 
-	let mut ppm = PpmWriter::new(output, (image_width, image_height), 8);
+	// let mut ppm = PpmWriter::new(output, (image_width, image_height), 8);
+	let mut ppm = PngWriter::new(
+		output,
+		(image_width, image_height),
+		8,
+		Some(OffsetDateTime::now_utc()),
+		Some(PngRenderingIntent::Perceptual),
+	);
 	ppm.write_header()?;
 	for row in image {
 		ppm.write_pixels(&row)?;

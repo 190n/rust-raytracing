@@ -1,4 +1,7 @@
+pub mod png;
 mod ppm;
+
+pub use png::PngWriter;
 pub use ppm::PpmWriter;
 
 use std::io;
