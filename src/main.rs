@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
 
-use lib::args::{self, WhichScene};
+use lib::args::{self, FileFormat, WhichScene};
 use lib::raytracer::{render, Tile, TILE_SIZE};
 use scene::{scenes, BvhNode};
 use time::OffsetDateTime;
@@ -179,18 +179,22 @@ fn main() -> io::Result<()> {
 	}
 
 	// let mut ppm = PpmWriter::new(output, (image_width, image_height), 8);
-	let mut ppm = PngWriter::new(
-		output,
-		(image_width, image_height),
-		8,
-		Some(OffsetDateTime::now_utc()),
-		Some(PngRenderingIntent::Perceptual),
-	);
-	ppm.write_header()?;
+	let mut output_writer: Box<dyn ImageWriter> = match args.format {
+		FileFormat::Png => Box::new(PngWriter::new(
+			output,
+			(image_width, image_height),
+			8,
+			Some(OffsetDateTime::now_utc()),
+			Some(PngRenderingIntent::Perceptual),
+		)),
+		FileFormat::Ppm => Box::new(PpmWriter::new(output, (image_width, image_height), 8)),
+	};
+
+	output_writer.write_header()?;
 	for row in image {
-		ppm.write_pixels(&row)?;
+		output_writer.write_pixels(&row)?;
 	}
-	ppm.end()?;
+	output_writer.end()?;
 
 	Ok(())
 }

@@ -78,20 +78,11 @@ impl<W: Write> Write for FilterWriter<W> {
 	}
 
 	fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-		eprint!(
-			"{} / {} / {}",
-			self.scanline_pos,
-			buf.len(),
-			self.scanline_size
-		);
 		let amount = usize::min(buf.len(), self.scanline_size - self.scanline_pos);
 		if self.scanline_pos == 0 {
 			self.current_filter = self.next_filter;
 			self.dest.write_all(&[self.current_filter as u8])?;
-			eprint!(", wrote zero");
 		}
-		eprint!(", writing {amount} bytes");
-		eprintln!();
 
 		self.dest.write_all(&buf[..amount])?;
 		self.scanline_pos = (self.scanline_pos + amount) % self.scanline_size;
@@ -192,11 +183,11 @@ impl<W: Write> ImageWriter for PngWriter<W> {
 		Ok(())
 	}
 
-	fn end(self) -> io::Result<()> {
-		let mut buf = if let Some(pw) = self.pixel_writer {
+	fn end(&mut self) -> io::Result<()> {
+		let mut buf = if let Some(pw) = self.pixel_writer.take() {
 			pw.into_inner()?.finish()?.finish()?.finish()?
 		} else {
-			self.buf.unwrap()
+			self.buf.take().unwrap()
 		};
 		PngChunk::Iend.write_to(&mut buf)?;
 		buf.flush()

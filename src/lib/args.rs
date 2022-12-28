@@ -14,6 +14,15 @@ pub struct Args {
 	pub output: Option<String>,
 	pub scene: WhichScene,
 	pub verbose: bool,
+	pub format: FileFormat,
+}
+
+pub struct ParseEnumError(pub &'static str);
+
+impl Display for ParseEnumError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		write!(f, "unknown {}", self.0)
+	}
 }
 
 #[derive(Debug)]
@@ -29,7 +38,7 @@ pub enum WhichScene {
 }
 
 impl FromStr for WhichScene {
-	type Err = String;
+	type Err = ParseEnumError;
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		match s {
 			"weekend" => Ok(Self::Weekend),
@@ -40,7 +49,36 @@ impl FromStr for WhichScene {
 			"cornell" => Ok(Self::Cornell),
 			"bisexual" => Ok(Self::Bisexual),
 			"week" => Ok(Self::Week),
-			_ => Err(format!("unknown scene: {}", s)),
+			_ => Err(ParseEnumError("scene")),
+		}
+	}
+}
+
+#[derive(Debug)]
+pub enum FileFormat {
+	Png,
+	Ppm,
+}
+
+impl FileFormat {
+	pub fn from_extension(filename: &str) -> Result<FileFormat, ParseEnumError> {
+		if filename.ends_with(".png") {
+			Ok(FileFormat::Png)
+		} else if filename.ends_with(".ppm") {
+			Ok(FileFormat::Ppm)
+		} else {
+			Err(ParseEnumError("format"))
+		}
+	}
+}
+
+impl FromStr for FileFormat {
+	type Err = ParseEnumError;
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"png" => Ok(Self::Png),
+			"ppm" => Ok(Self::Ppm),
+			_ => Err(ParseEnumError("format")),
 		}
 	}
 }
@@ -91,7 +129,9 @@ pub fn show_help() {
 			"  -s, --samples s:       number of samples per pixel. default: 100\n",
 			"  -d, --depth d:         maximum bounces per ray. default: 50\n",
 			"  -r, --seed r:          random number seed. default: entropy from the OS\n",
-			"  -o, --output filename: file to output PPM image to. default: stdout\n",
+			"  -o, --output filename: file to output image to. default: stdout\n",
+			"  -f, --format png|ppm:  which format to output. default: guess from file extension,\n",
+			"                         or PPM for stdout\n",
 			"  -v, --verbose:         log performance data to stderr\n",
 			"  -S, --scene scene:     which scene to render. options:\n",
 			"    weekend:\n",
@@ -131,8 +171,9 @@ pub fn parse() -> Result<Args, Error> {
 	}
 
 	let mut did_get_seed_from_os = false;
+	let mut guess_format = false;
 
-	let args = Args {
+	let mut args = Args {
 		threads: pargs
 			.opt_value_from_str(["-t", "--threads"])?
 			.unwrap_or(system_threads()),
@@ -157,6 +198,12 @@ pub fn parse() -> Result<Args, Error> {
 		scene: pargs
 			.opt_value_from_str(["-S", "--scene"])?
 			.unwrap_or(WhichScene::Weekend),
+		format: pargs
+			.opt_value_from_str(["-f", "--format"])?
+			.unwrap_or_else(|| {
+				guess_format = true;
+				FileFormat::Ppm
+			}),
 	};
 
 	if args.threads == 0 {
@@ -175,6 +222,21 @@ pub fn parse() -> Result<Args, Error> {
 					cause: "output filename must not be empty".to_string(),
 				},
 			));
+		}
+	}
+
+	if guess_format {
+		if let Some(ref s) = args.output {
+			if let Ok(format) = FileFormat::from_extension(s) {
+				args.format = format;
+			} else {
+				return Err(Error::PicoError(
+					pico_args::Error::Utf8ArgumentParsingFailed {
+						value: s.to_string(),
+						cause: "failed to determine format from extension".to_string(),
+					},
+				));
+			}
 		}
 	}
 

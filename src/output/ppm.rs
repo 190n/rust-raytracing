@@ -42,7 +42,7 @@ impl<W: Write> ImageWriter for PpmWriter<W> {
 		Ok(())
 	}
 
-	fn end(mut self) -> io::Result<()> {
+	fn end(&mut self) -> io::Result<()> {
 		self.dest.flush()
 	}
 }
