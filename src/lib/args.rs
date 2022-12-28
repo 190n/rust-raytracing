@@ -10,7 +10,8 @@ pub struct Args {
 	pub width: usize,
 	pub samples: usize,
 	pub depth: usize,
-	pub seed: u64,
+	pub world_seed: u64,
+	pub sample_seed: u64,
 	pub output: Option<String>,
 	pub scene: WhichScene,
 	pub verbose: bool,
@@ -118,6 +119,12 @@ fn system_threads() -> usize {
 		.get()
 }
 
+fn entropy_seed() -> Result<u64, getrandom::Error> {
+	let mut buf = [0u8; 8];
+	getrandom(&mut buf)?;
+	Ok(u64::from_le_bytes(buf))
+}
+
 pub fn show_help() {
 	eprint!(
 		concat!(
@@ -128,7 +135,10 @@ pub fn show_help() {
 			"  -w, --width w:         width of image in pixels. default: 600\n",
 			"  -s, --samples s:       number of samples per pixel. default: 100\n",
 			"  -d, --depth d:         maximum bounces per ray. default: 50\n",
-			"  -r, --seed r:          random number seed. default: entropy from the OS\n",
+			"  -r, --world-seed n:    random number seed for generating the world.\n",
+			"                         default: entropy from the OS\n",
+			"  -R, --sample-seed n:   random number seed for shooting rays.\n",
+			"                         default: entropy from the OS\n",
 			"  -o, --output filename: file to output image to. default: stdout\n",
 			"  -f, --format png|ppm:  which format to output. default: guess from file extension,\n",
 			"                         or PPM for stdout\n",
@@ -182,16 +192,20 @@ pub fn parse() -> Result<Args, Error> {
 			.opt_value_from_str(["-s", "--samples"])?
 			.unwrap_or(100),
 		depth: pargs.opt_value_from_str(["-d", "--depth"])?.unwrap_or(50),
-		seed: pargs
-			.opt_value_from_str(["-r", "--seed"])?
+		world_seed: pargs
+			.opt_value_from_str(["-r", "--world-seed"])?
 			.map(|seed| Ok::<u64, getrandom::Error>(seed))
 			.unwrap_or_else(|| {
-				let mut buf = [0u8; 8];
-				getrandom(&mut buf)?;
-				let seed = u64::from_le_bytes(buf);
 				// we will print out the seed so that users can keep using a seed they like
 				did_get_seed_from_os = true;
-				Ok(seed)
+				entropy_seed()
+			})?,
+		sample_seed: pargs
+			.opt_value_from_str(["-R", "--sample-seed"])?
+			.map(|seed| Ok::<u64, getrandom::Error>(seed))
+			.unwrap_or_else(|| {
+				did_get_seed_from_os = true;
+				entropy_seed()
 			})?,
 		output: pargs.opt_value_from_str(["-o", "--output"])?,
 		verbose: pargs.contains(["-v", "--verbose"]),
@@ -246,7 +260,10 @@ pub fn parse() -> Result<Args, Error> {
 	}
 
 	if did_get_seed_from_os {
-		eprintln!("using seed: {}", args.seed);
+		eprintln!(
+			"using seeds: -r {} -R {}",
+			args.world_seed, args.sample_seed
+		);
 	}
 
 	Ok(args)

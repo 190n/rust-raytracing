@@ -1,7 +1,8 @@
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use rand::Rng;
+use rand::{Rng, SeedableRng};
+use rand_xoshiro::Xoshiro256PlusPlus;
 
 use crate::lib::{Color, Ray};
 use crate::object::Hittable;
@@ -56,7 +57,7 @@ fn ray_color(
 /// current_pos: shared tracker of the next tile to render (top left corner)
 pub fn render(
 	out: mpsc::Sender<Tile>,
-	rng: &mut impl Rng,
+	seed: u64,
 	world: Arc<dyn Hittable>,
 	cam: Camera,
 	background: Color,
@@ -92,6 +93,7 @@ pub fn render(
 		};
 
 		let mut tile = Tile::new(x, y);
+		let mut rng = Xoshiro256PlusPlus::seed_from_u64(seed ^ x as u64 ^ y as u64);
 
 		let instant = Instant::now();
 		for j in (y..(y + TILE_SIZE)).rev() {
@@ -108,8 +110,9 @@ pub fn render(
 				for _ in 0..samples_per_pixel {
 					let u = (i as f64 + rng.gen::<f64>()) / (width - 1) as f64;
 					let v = (j as f64 + rng.gen::<f64>()) / (height - 1) as f64;
-					let r = cam.get_ray(rng, u, v);
-					pixel_color += ray_color(rng, r, background, world.as_ref(), max_depth as i32);
+					let r = cam.get_ray(&mut rng, u, v);
+					pixel_color +=
+						ray_color(&mut rng, r, background, world.as_ref(), max_depth as i32);
 				}
 				let factor = 1.0 / samples_per_pixel as f64;
 				tile.pixels[j - y][i - x] = (pixel_color * factor).tonemap();

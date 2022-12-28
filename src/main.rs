@@ -10,7 +10,7 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
-use rand::{Rng, SeedableRng};
+use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256PlusPlus;
 
 use lib::args::{self, FileFormat, WhichScene};
@@ -65,13 +65,7 @@ fn main() -> io::Result<()> {
 		args::show_help();
 		std::process::exit(1);
 	});
-
-	// use 64 bits of seed; rest are zeroed
-	let mut seed = [0u8; 32];
-	for (i, &b) in args.seed.to_le_bytes().iter().enumerate() {
-		seed[i] = b;
-	}
-	let mut rng = Xoshiro256PlusPlus::from_seed(seed);
+	let mut world_rng = Xoshiro256PlusPlus::seed_from_u64(args.world_seed);
 
 	let output: Box<dyn Write> = if let Some(filename) = args.output {
 		Box::new(File::create(filename)?)
@@ -80,17 +74,17 @@ fn main() -> io::Result<()> {
 	};
 
 	let (world, cam, background) = match args.scene {
-		WhichScene::Weekend => scenes::random_scene(&mut rng, false, false),
-		WhichScene::Gay => scenes::random_scene(&mut rng, false, true),
-		WhichScene::Tuesday => scenes::random_scene(&mut rng, true, false),
-		WhichScene::Perlin => scenes::perlin_spheres(&mut rng),
+		WhichScene::Weekend => scenes::random_scene(&mut world_rng, false, false),
+		WhichScene::Gay => scenes::random_scene(&mut world_rng, false, true),
+		WhichScene::Tuesday => scenes::random_scene(&mut world_rng, true, false),
+		WhichScene::Perlin => scenes::perlin_spheres(&mut world_rng),
 		WhichScene::Earth => scenes::earth().expect("failed to load texture"),
 		WhichScene::Cornell => scenes::cornell_box(),
 		WhichScene::Bisexual => scenes::bisexual_lighting(),
-		WhichScene::Week => scenes::week(&mut rng).expect("failed to load texture"),
+		WhichScene::Week => scenes::week(&mut world_rng).expect("failed to load texture"),
 	};
 	let world = Arc::new(
-		BvhNode::new(&mut rng, world.as_ref(), 0.0, 1.0).unwrap_or_else(|e| {
+		BvhNode::new(&mut world_rng, world.as_ref(), 0.0, 1.0).unwrap_or_else(|e| {
 			eprintln!("error constructing BVH: {:?}", e);
 			std::process::exit(1);
 		}),
@@ -115,13 +109,12 @@ fn main() -> io::Result<()> {
 		let (send, recv) = mpsc::channel::<Tile>();
 		for _ in 0..num_threads {
 			let w = world.clone();
-			let mut thread_rng = Xoshiro256PlusPlus::from_seed(rng.gen());
 			let pos = current_pos.clone();
 			let q = send.clone();
 			handles.push(thread::spawn(move || {
 				render(
 					q,
-					&mut thread_rng,
+					args.sample_seed,
 					w,
 					cam,
 					background,
