@@ -210,10 +210,7 @@ impl Texture for NoiseTexture {
 		let low = self.low.value(u, v, p);
 		let high = self.high.value(u, v, p);
 		let value = 0.5
-			* (1.0
-				+ f64::sin(
-					self.scale * self.noise.noise(p) + 10.0 * self.noise.turbulence(p, self.depth),
-				));
+			* (1.0 + f64::sin(self.scale * p.z() + 10.0 * self.noise.turbulence(p, self.depth)));
 		low + (high - low) * value
 	}
 }
