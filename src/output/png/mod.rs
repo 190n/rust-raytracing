@@ -166,7 +166,15 @@ impl<W: Write> ImageWriter for PngWriter<W> {
 		let pw = self.pixel_writer.as_mut().unwrap();
 
 		for p in pixels {
-			let p = self.dither.dither(*p);
+			let mut p = self.dither.dither(*p);
+
+			// left shift so that when not all bits are significant, the low-order bits are zero
+			// instead of high-order
+			let written_bits = if self.bits > 8 { 16 } else { 8 };
+			p.0 <<= written_bits - self.bits;
+			p.1 <<= written_bits - self.bits;
+			p.2 <<= written_bits - self.bits;
+
 			if self.bits <= 8 {
 				pw.write_all(&[p.0 as u8, p.1 as u8, p.2 as u8])?;
 			} else {
