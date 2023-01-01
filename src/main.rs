@@ -5,22 +5,22 @@ mod scene;
 
 use std::fmt::{self, Display, Formatter};
 use std::fs::File;
-use std::io::{self, Write};
+use std::io::{self, BufWriter, Write};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
+use exr::prelude::*;
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256PlusPlus;
+use time::OffsetDateTime;
 
 use lib::args::{self, FileFormat, WhichScene};
 use lib::raytracer::{render, Tile, TILE_SIZE};
+use lib::Color;
+use output::png::PngRenderingIntent;
+use output::{ImageWriter, PngWriter, PpmWriter};
 use scene::{scenes, BvhNode};
-use time::OffsetDateTime;
-
-use crate::lib::Color;
-use crate::output::png::PngRenderingIntent;
-use crate::output::{ImageWriter, PngWriter, PpmWriter};
 
 struct RayRate(f64);
 
@@ -67,7 +67,7 @@ fn main() -> io::Result<()> {
 	});
 	let mut world_rng = Xoshiro256PlusPlus::seed_from_u64(args.world_seed);
 
-	let output: Box<dyn Write> = if let Some(filename) = args.output {
+	let mut output: Box<dyn Write> = if let Some(filename) = args.output {
 		Box::new(File::create(filename)?)
 	} else {
 		Box::new(io::stdout())
@@ -170,26 +170,52 @@ fn main() -> io::Result<()> {
 		eprintln!("total:      {}", RayRate(total_rays_sec));
 	}
 
-	let mut output_writer: Box<dyn ImageWriter> = match args.format {
-		FileFormat::Png => Box::new(PngWriter::new(
-			output,
-			(image_width, image_height),
-			args.bit_depth,
-			Some(OffsetDateTime::now_utc()),
-			Some(PngRenderingIntent::Perceptual),
-		)),
-		FileFormat::Ppm => Box::new(PpmWriter::new(
-			output,
-			(image_width, image_height),
-			args.bit_depth,
-		)),
-	};
+	match args.format {
+		FileFormat::Png | FileFormat::Ppm => {
+			let mut output_writer: Box<dyn ImageWriter> = match args.format {
+				FileFormat::Png => Box::new(PngWriter::new(
+					output,
+					(image_width, image_height),
+					args.bit_depth,
+					Some(OffsetDateTime::now_utc()),
+					Some(PngRenderingIntent::Perceptual),
+				)),
+				FileFormat::Ppm => Box::new(PpmWriter::new(
+					output,
+					(image_width, image_height),
+					args.bit_depth,
+				)),
+				_ => unreachable!(),
+			};
 
-	output_writer.write_header()?;
-	for row in image {
-		output_writer.write_pixels(&row)?;
+			output_writer.write_header()?;
+			for mut row in image {
+				row.iter_mut().for_each(|p| *p = p.tonemap());
+				output_writer.write_pixels(&row)?;
+			}
+			output_writer.end()?;
+		},
+		FileFormat::Exr => {
+			let channels = SpecificChannels::rgb(|pos: Vec2<usize>| {
+				let pixel = image[pos.1][pos.0];
+				(pixel.x() as f32, pixel.y() as f32, pixel.z() as f32)
+			});
+			let mut image = Image::from_channels((image_width, image_height), channels);
+			// sRGB
+			image.attributes.chromaticities = Some(attribute::Chromaticities {
+				red: Vec2(0.64, 0.33),
+				green: Vec2(0.30, 0.60),
+				blue: Vec2(0.15, 0.06),
+				white: Vec2(0.3127, 0.3290),
+			});
+			let mut image_data = io::Cursor::new(vec![0u8; 0]);
+			image
+				.write()
+				.to_buffered(&mut image_data)
+				.expect("error writing output image");
+			io::copy(&mut image_data.into_inner().as_slice(), &mut output)?;
+		},
 	}
-	output_writer.end()?;
 
 	Ok(())
 }

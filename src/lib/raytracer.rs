@@ -115,7 +115,7 @@ pub fn render(
 						ray_color(&mut rng, r, background, world.as_ref(), max_depth as i32);
 				}
 				let factor = 1.0 / samples_per_pixel as f64;
-				tile.pixels[j - y][i - x] = (pixel_color * factor).tonemap();
+				tile.pixels[j - y][i - x] = pixel_color * factor;
 				total_pixels += 1;
 			}
 		}

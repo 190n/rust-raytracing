@@ -479,6 +479,7 @@ dependencies = [
 name = "raytracing"
 version = "0.1.0"
 dependencies = [
+ "exr",
  "flate2",
  "getrandom",
  "image",

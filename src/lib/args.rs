@@ -60,6 +60,7 @@ impl FromStr for WhichScene {
 pub enum FileFormat {
 	Png,
 	Ppm,
+	Exr,
 }
 
 impl FileFormat {
@@ -68,6 +69,8 @@ impl FileFormat {
 			Ok(FileFormat::Png)
 		} else if filename.ends_with(".ppm") {
 			Ok(FileFormat::Ppm)
+		} else if filename.ends_with(".exr") {
+			Ok(FileFormat::Exr)
 		} else {
 			Err(ParseEnumError("format"))
 		}
@@ -80,6 +83,7 @@ impl FromStr for FileFormat {
 		match s {
 			"png" => Ok(Self::Png),
 			"ppm" => Ok(Self::Ppm),
+			"exr" => Ok(Self::Exr),
 			_ => Err(ParseEnumError("format")),
 		}
 	}
@@ -132,21 +136,23 @@ pub fn show_help() {
 			"usage: {} [-t|--threads n] [-w|--width w] [-s|--samples s] [-r|--seed r] \n",
 			"         [-d|--depth d] [-o|--output filename] [-S|--scene scene]\n",
 			"\n",
-			"  -t, --threads n:       number of threads. default: number of logical processors ({})\n",
-			"  -w, --width w:         width of image in pixels. default: 600\n",
-			"  -s, --samples s:       number of samples per pixel. default: 100\n",
-			"  -d, --depth d:         maximum bounces per ray. default: 50\n",
-			"  -r, --world-seed n:    random number seed for generating the world.\n",
-			"                         default: entropy from the OS\n",
-			"  -R, --sample-seed n:   random number seed for shooting rays.\n",
-			"                         default: entropy from the OS\n",
-			"  -o, --output filename: file to output image to. default: stdout\n",
-			"  -f, --format png|ppm:  which format to output. default: guess from file extension,\n",
-			"                         or PPM for stdout\n",
-			"  -b, --bit-depth n:     number of bits per channel in the output image. default: 8.\n",
-			"                         range: 1-8 for PPM, 1-16 for PNG.\n",
-			"  -v, --verbose:         log performance data to stderr\n",
-			"  -S, --scene scene:     which scene to render. options:\n",
+			"  -t, --threads n:           number of threads. default: number of logical processors\n",
+			"                             ({})\n",
+			"  -w, --width w:             width of image in pixels. default: 600\n",
+			"  -s, --samples s:           number of samples per pixel. default: 100\n",
+			"  -d, --depth d:             maximum bounces per ray. default: 50\n",
+			"  -r, --world-seed n:        random number seed for generating the world.\n",
+			"                             default: entropy from the OS\n",
+			"  -R, --sample-seed n:       random number seed for shooting rays.\n",
+			"                             default: entropy from the OS\n",
+			"  -o, --output filename:     file to output image to. default: stdout\n",
+			"  -f, --format png|ppm|exr|: which format to output. default: guess from file\n",
+			"                             extension, or PPM for stdout\n",
+			"  -b, --bit-depth n:         number of bits per channel in the output image.\n",
+			"                             default: 8. range: 1-8 for PPM, 1-16 for PNG.\n",
+			"                             ignored for OpenEXR (32-bit float is used).\n",
+			"  -v, --verbose:             log performance data to stderr\n",
+			"  -S, --scene scene:         which scene to render. options:\n",
 			"    weekend:\n",
 			"      random spheres; final render from Ray Tracing in One Weekend\n",
 			"    gay:\n",
@@ -281,6 +287,7 @@ pub fn parse() -> Result<Args, Error> {
 				));
 			}
 		},
+		_ => {},
 	}
 
 	let rest = pargs.finish();
