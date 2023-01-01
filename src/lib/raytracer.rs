@@ -14,6 +14,7 @@ pub struct Tile {
 	pub pixels: [[Color; TILE_SIZE]; TILE_SIZE],
 	pub x: usize,
 	pub y: usize,
+	pub duration: Duration,
 }
 
 impl Tile {
@@ -22,6 +23,7 @@ impl Tile {
 			pixels: [[Color::zero(); TILE_SIZE]; TILE_SIZE],
 			x,
 			y,
+			duration: Duration::ZERO,
 		}
 	}
 }
@@ -117,7 +119,8 @@ pub fn render(
 				total_pixels += 1;
 			}
 		}
-		total_time += instant.elapsed();
+		tile.duration = instant.elapsed();
+		total_time += tile.duration;
 
 		out.send(tile).unwrap();
 	}
