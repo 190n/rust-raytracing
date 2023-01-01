@@ -16,6 +16,7 @@ pub struct Args {
 	pub scene: WhichScene,
 	pub verbose: bool,
 	pub format: FileFormat,
+	pub bit_depth: u8,
 }
 
 pub struct ParseEnumError(pub &'static str);
@@ -142,6 +143,8 @@ pub fn show_help() {
 			"  -o, --output filename: file to output image to. default: stdout\n",
 			"  -f, --format png|ppm:  which format to output. default: guess from file extension,\n",
 			"                         or PPM for stdout\n",
+			"  -b, --bit-depth n:     number of bits per channel in the output image. default: 8.\n",
+			"                         range: 1-8 for PPM, 1-16 for PNG.\n",
 			"  -v, --verbose:         log performance data to stderr\n",
 			"  -S, --scene scene:     which scene to render. options:\n",
 			"    weekend:\n",
@@ -218,6 +221,9 @@ pub fn parse() -> Result<Args, Error> {
 				guess_format = true;
 				FileFormat::Ppm
 			}),
+		bit_depth: pargs
+			.opt_value_from_str(["-b", "--bit-depth"])?
+			.unwrap_or(8),
 	};
 
 	if args.threads == 0 {
@@ -252,6 +258,29 @@ pub fn parse() -> Result<Args, Error> {
 				));
 			}
 		}
+	}
+
+	match args.format {
+		FileFormat::Png => {
+			if args.bit_depth < 1 || args.bit_depth > 16 {
+				return Err(Error::PicoError(
+					pico_args::Error::Utf8ArgumentParsingFailed {
+						value: args.bit_depth.to_string(),
+						cause: "PNG image bit depth must be between 1 and 16".to_string(),
+					},
+				));
+			}
+		},
+		FileFormat::Ppm => {
+			if args.bit_depth < 1 || args.bit_depth > 8 {
+				return Err(Error::PicoError(
+					pico_args::Error::Utf8ArgumentParsingFailed {
+						value: args.bit_depth.to_string(),
+						cause: "PPM image bit depth must be between 1 and 8".to_string(),
+					},
+				));
+			}
+		},
 	}
 
 	let rest = pargs.finish();

@@ -18,7 +18,7 @@ use lib::raytracer::{render, Tile, TILE_SIZE};
 use scene::{scenes, BvhNode};
 use time::OffsetDateTime;
 
-use crate::lib::color::OutputColor;
+use crate::lib::Color;
 use crate::output::png::PngRenderingIntent;
 use crate::output::{ImageWriter, PngWriter, PpmWriter};
 
@@ -99,8 +99,7 @@ fn main() -> io::Result<()> {
 
 	let mut handles: Vec<JoinHandle<(Duration, usize)>> = Vec::with_capacity(num_threads);
 
-	let mut image: Vec<Vec<OutputColor>> =
-		vec![vec![OutputColor(0, 0, 0); image_width]; image_height];
+	let mut image: Vec<Vec<Color>> = vec![vec![Color::zero(); image_width]; image_height];
 	let current_pos = Arc::new(Mutex::new((0usize, 0usize)));
 
 	// sender is scoped in this block so that the main thread's sender gets dropped
@@ -171,16 +170,19 @@ fn main() -> io::Result<()> {
 		eprintln!("total:      {}", RayRate(total_rays_sec));
 	}
 
-	// let mut ppm = PpmWriter::new(output, (image_width, image_height), 8);
 	let mut output_writer: Box<dyn ImageWriter> = match args.format {
 		FileFormat::Png => Box::new(PngWriter::new(
 			output,
 			(image_width, image_height),
-			8,
+			args.bit_depth,
 			Some(OffsetDateTime::now_utc()),
 			Some(PngRenderingIntent::Perceptual),
 		)),
-		FileFormat::Ppm => Box::new(PpmWriter::new(output, (image_width, image_height), 8)),
+		FileFormat::Ppm => Box::new(PpmWriter::new(
+			output,
+			(image_width, image_height),
+			args.bit_depth,
+		)),
 	};
 
 	output_writer.write_header()?;

@@ -7,7 +7,7 @@ use flate2::Compression;
 use time::OffsetDateTime;
 
 use super::ImageWriter;
-use crate::lib::color::{Dither, OutputColor};
+use crate::lib::color::{Color, Dither};
 use chunk::PngChunk;
 
 pub use chunk::PngRenderingIntent;
@@ -119,7 +119,7 @@ impl<W: Write> PngWriter<W> {
 			bits,
 			time,
 			srgb,
-			dither: Dither::new(bits),
+			dither: Dither::new(bits, width),
 		}
 	}
 }
@@ -152,7 +152,7 @@ impl<W: Write> ImageWriter for PngWriter<W> {
 		Ok(())
 	}
 
-	fn write_pixels(&mut self, pixels: &[OutputColor]) -> io::Result<()> {
+	fn write_pixels(&mut self, pixels: &[Color]) -> io::Result<()> {
 		if self.pixel_writer.is_none() {
 			self.pixel_writer = Some(BufWriter::with_capacity(
 				IDAT_SIZE,
@@ -168,12 +168,19 @@ impl<W: Write> ImageWriter for PngWriter<W> {
 		for p in pixels {
 			let mut p = self.dither.dither(*p);
 
-			// left shift so that when not all bits are significant, the low-order bits are zero
-			// instead of high-order
-			let written_bits = if self.bits > 8 { 16 } else { 8 };
+			let mut written_bits = if self.bits > 8 { 16 } else { 8 };
 			p.0 <<= written_bits - self.bits;
 			p.1 <<= written_bits - self.bits;
 			p.2 <<= written_bits - self.bits;
+
+			// repeat most significant bits into the lower ones so that the overall sample ranges
+			// from all zeroes to all ones
+			while written_bits > self.bits {
+				p.0 |= p.0 >> self.bits;
+				p.1 |= p.1 >> self.bits;
+				p.2 |= p.2 >> self.bits;
+				written_bits -= self.bits;
+			}
 
 			if self.bits <= 8 {
 				pw.write_all(&[p.0 as u8, p.1 as u8, p.2 as u8])?;

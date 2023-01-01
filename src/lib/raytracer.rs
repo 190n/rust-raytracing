@@ -8,12 +8,10 @@ use crate::lib::{Color, Ray};
 use crate::object::Hittable;
 use crate::scene::Camera;
 
-use super::color::OutputColor;
-
 pub const TILE_SIZE: usize = 16;
 
 pub struct Tile {
-	pub pixels: [[OutputColor; TILE_SIZE]; TILE_SIZE],
+	pub pixels: [[Color; TILE_SIZE]; TILE_SIZE],
 	pub x: usize,
 	pub y: usize,
 }
@@ -21,7 +19,7 @@ pub struct Tile {
 impl Tile {
 	fn new(x: usize, y: usize) -> Self {
 		Self {
-			pixels: [[OutputColor(0, 0, 0); TILE_SIZE]; TILE_SIZE],
+			pixels: [[Color::zero(); TILE_SIZE]; TILE_SIZE],
 			x,
 			y,
 		}

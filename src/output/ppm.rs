@@ -1,7 +1,7 @@
 use std::io::{self, BufWriter, Write};
 
 use super::ImageWriter;
-use crate::lib::color::{Dither, OutputColor};
+use crate::lib::color::{Color, Dither};
 
 pub struct PpmWriter<W: Write> {
 	dest: BufWriter<W>,
@@ -20,7 +20,7 @@ impl<W: Write> PpmWriter<W> {
 			dest: BufWriter::new(dest),
 			width,
 			height,
-			dither: Dither::new(bits),
+			dither: Dither::new(bits, width),
 			max: (1 << bits) - 1,
 		}
 	}
@@ -35,7 +35,7 @@ impl<W: Write> ImageWriter for PpmWriter<W> {
 		)
 	}
 
-	fn write_pixels(&mut self, pixels: &[OutputColor]) -> io::Result<()> {
+	fn write_pixels(&mut self, pixels: &[Color]) -> io::Result<()> {
 		for p in pixels.iter().map(|&p| self.dither.dither(p)) {
 			self.dest.write_all(&[p.0 as u8, p.1 as u8, p.2 as u8])?;
 		}
