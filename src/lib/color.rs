@@ -4,7 +4,7 @@ pub type Color = Vec3;
 
 // Color (f64)
 // `-> oetf -> f64
-// `-> tonemap -> u16
+// `-> clamp -> f64
 // `-> dither -> u16
 
 #[derive(Clone, Copy)]
@@ -71,9 +71,9 @@ impl Dither {
 
 		self.advance();
 		OutputColor(
-			(new_pixel.x() * self.scale) as u16,
-			(new_pixel.y() * self.scale) as u16,
-			(new_pixel.z() * self.scale) as u16,
+			(new_pixel.x() * self.scale).clamp(0.0, self.scale) as u16,
+			(new_pixel.y() * self.scale).clamp(0.0, self.scale) as u16,
+			(new_pixel.z() * self.scale).clamp(0.0, self.scale) as u16,
 		)
 	}
 }

@@ -5,7 +5,7 @@ mod scene;
 
 use std::fmt::{self, Display, Formatter};
 use std::fs::File;
-use std::io::{self, BufWriter, Write};
+use std::io::{self, Write};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
