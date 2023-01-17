@@ -14,12 +14,12 @@ My implementation of [_Ray Tracing in One Weekend_](https://raytracing.github.io
 - [x] textures (solid, noise, images)
 - [x] rectangles and lights
 - [x] instances
-- [ ] volumes
-- [ ] final scene from _The Next Week_
-- [ ] color management
+- [x] volumes
+- [x] final scene from _The Next Week_
+- [x] color management
 - [x] pride flag materials
+- [x] PNG output?
 - [ ] PORTALS
-- [ ] PNG output?
 - [ ] mesh geometry?
 
 ## Usage
