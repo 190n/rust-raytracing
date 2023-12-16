@@ -42,7 +42,13 @@ impl Hittable for ConstantMedium {
 		self.boundary.bounding_box(time0, time1)
 	}
 
-	fn hit(&self, rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+	fn hit<'a>(
+		&'a self,
+		rng: &mut dyn RngCore,
+		r: Ray,
+		t_min: f64,
+		t_max: f64,
+	) -> Option<HitRecord<'a>> {
 		if let Some(mut rec1) = self.boundary.hit(rng, r, f64::NEG_INFINITY, f64::INFINITY) {
 			if let Some(mut rec2) = self.boundary.hit(rng, r, rec1.t + 0.0001, f64::INFINITY) {
 				if rec1.t < t_min {
@@ -74,7 +80,7 @@ impl Hittable for ConstantMedium {
 					front_face: true,                 // arbitrary
 					u: 1.0,                           // arbitrary
 					v: 1.0,                           // arbitrary
-					mat_ptr: self.phase_function.clone(),
+					mat_ptr: self.phase_function.as_ref(),
 				});
 			}
 		}

@@ -57,8 +57,20 @@ impl Hittable for MovingSphere {
 		))
 	}
 
-	fn hit(&self, rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
-		Sphere::new(self.center(r.time()), self.radius, self.mat_ptr.clone())
-			.hit(rng, r, t_min, t_max)
+	fn hit<'a>(
+		&'a self,
+		_rng: &mut dyn RngCore,
+		r: Ray,
+		t_min: f64,
+		t_max: f64,
+	) -> Option<HitRecord<'a>> {
+		return Sphere::hit_implementation(
+			self.center(r.time()),
+			self.radius,
+			self.mat_ptr.as_ref(),
+			r,
+			t_min,
+			t_max,
+		);
 	}
 }

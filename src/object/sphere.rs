@@ -30,14 +30,19 @@ impl Sphere {
 			mat_ptr,
 		}
 	}
-}
 
-impl Hittable for Sphere {
-	fn hit(&self, _rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
-		let oc = r.origin() - self.center;
+	pub fn hit_implementation<'a>(
+		center: Point3,
+		radius: f64,
+		mat_ptr: &'a dyn Material,
+		r: Ray,
+		t_min: f64,
+		t_max: f64,
+	) -> Option<HitRecord<'a>> {
+		let oc = r.origin() - center;
 		let a = r.direction().length_squared();
 		let half_b = Vec3::dot(oc, r.direction());
-		let c = oc.length_squared() - self.radius * self.radius;
+		let c = oc.length_squared() - radius * radius;
 
 		let discriminant = half_b * half_b - a * c;
 		if discriminant < 0.0 {
@@ -54,19 +59,38 @@ impl Hittable for Sphere {
 		}
 
 		let p = r.at(root);
-		let outward_normal = (p - self.center) / self.radius;
+		let outward_normal = (p - center) / radius;
 		let (u, v) = Sphere::get_sphere_uv(outward_normal);
 		let mut hr = HitRecord {
 			t: root,
 			p,
 			normal: Vec3::zero(),
 			front_face: false,
-			mat_ptr: self.mat_ptr.clone(),
+			mat_ptr,
 			u,
 			v,
 		};
 		hr.set_face_normal(r, outward_normal);
 		Some(hr)
+	}
+}
+
+impl Hittable for Sphere {
+	fn hit<'a>(
+		&'a self,
+		_rng: &mut dyn RngCore,
+		r: Ray,
+		t_min: f64,
+		t_max: f64,
+	) -> Option<HitRecord<'a>> {
+		return Sphere::hit_implementation(
+			self.center,
+			self.radius,
+			self.mat_ptr.as_ref(),
+			r,
+			t_min,
+			t_max,
+		);
 	}
 
 	fn bounding_box(&self, _time0: f64, _time1: f64) -> Option<Aabb> {

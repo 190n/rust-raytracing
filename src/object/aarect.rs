@@ -30,7 +30,13 @@ impl XYRect {
 }
 
 impl Hittable for XYRect {
-	fn hit(&self, _rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+	fn hit<'a>(
+		&'a self,
+		_rng: &mut dyn RngCore,
+		r: Ray,
+		t_min: f64,
+		t_max: f64,
+	) -> Option<HitRecord<'a>> {
 		let t = (self.k - r.origin().z()) / r.direction().z();
 		if t < t_min || t > t_max {
 			return None;
@@ -46,7 +52,7 @@ impl Hittable for XYRect {
 			u: (x - self.x0) / (self.x1 - self.x0),
 			v: (y - self.y0) / (self.y1 - self.y0),
 			t,
-			mat_ptr: self.mat_ptr.clone(),
+			mat_ptr: self.mat_ptr.as_ref(),
 			p: r.at(t),
 			normal: Vec3::zero(),
 			front_face: false,
@@ -87,7 +93,13 @@ impl XZRect {
 }
 
 impl Hittable for XZRect {
-	fn hit(&self, _rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+	fn hit<'a>(
+		&'a self,
+		_rng: &mut dyn RngCore,
+		r: Ray,
+		t_min: f64,
+		t_max: f64,
+	) -> Option<HitRecord<'a>> {
 		let t = (self.k - r.origin().y()) / r.direction().y();
 		if t < t_min || t > t_max {
 			return None;
@@ -103,7 +115,7 @@ impl Hittable for XZRect {
 			u: (x - self.x0) / (self.x1 - self.x0),
 			v: (z - self.z0) / (self.z1 - self.z0),
 			t,
-			mat_ptr: self.mat_ptr.clone(),
+			mat_ptr: self.mat_ptr.as_ref(),
 			p: r.at(t),
 			normal: Vec3::zero(),
 			front_face: false,
@@ -144,7 +156,13 @@ impl YZRect {
 }
 
 impl Hittable for YZRect {
-	fn hit(&self, _rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+	fn hit<'a>(
+		&'a self,
+		_rng: &mut dyn RngCore,
+		r: Ray,
+		t_min: f64,
+		t_max: f64,
+	) -> Option<HitRecord<'a>> {
 		let t = (self.k - r.origin().x()) / r.direction().x();
 		if t < t_min || t > t_max {
 			return None;
@@ -160,7 +178,7 @@ impl Hittable for YZRect {
 			u: (y - self.y0) / (self.y1 - self.y0),
 			v: (z - self.z0) / (self.z1 - self.z0),
 			t,
-			mat_ptr: self.mat_ptr.clone(),
+			mat_ptr: self.mat_ptr.as_ref(),
 			p: r.at(t),
 			normal: Vec3::zero(),
 			front_face: false,
