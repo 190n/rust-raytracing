@@ -59,10 +59,29 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 		ground_material,
 	)));
 
-	let trans = Arc::new(Lambertian::new(StripeTexture::trans_sphere()));
-	let rainbow = Arc::new(Lambertian::new(StripeTexture::rainbow_sphere()));
-	let enby = Arc::new(Lambertian::new(StripeTexture::enby_sphere()));
-	let bi = Arc::new(Lambertian::new(StripeTexture::bi_sphere()));
+	let gay_materials: [Arc<dyn Material>; 16] = std::array::from_fn(|i| {
+		let texture = match i % 4 {
+			0 => StripeTexture::trans_sphere(),
+			1 => StripeTexture::rainbow_sphere(),
+			2 => StripeTexture::enby_sphere(),
+			3 => StripeTexture::bi_sphere(),
+			4.. => unreachable!(),
+		};
+
+		return match i / 4 {
+			0 => Arc::new(Lambertian::new(texture)) as Arc<dyn Material>,
+			1 => Arc::new(Metal::new(texture, 0.2)) as Arc<dyn Material>,
+			2 => Arc::new(Dielectric { ir: 1.5 }) as Arc<dyn Material>,
+			3 => Arc::new(DiffuseLight::new(Arc::new(FunctionTexture({
+				let texture_ref = texture.clone();
+				move |u, v, p| {
+					let value = texture_ref.value(u, v, p);
+					return 20.0 * value;
+				}
+			})))) as Arc<dyn Material>,
+			4.. => unreachable!(),
+		};
+	});
 
 	for a in -11..11 {
 		for b in -11..11 {
@@ -75,15 +94,7 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 
 			if (center - Point3::new(4.0, 0.2, 0.0)).length_squared() > 0.81 {
 				let sphere_material: Arc<dyn Material> = if gay {
-					if choose_mat < 0.25 {
-						trans.clone()
-					} else if choose_mat < 0.5 {
-						rainbow.clone()
-					} else if choose_mat < 0.75 {
-						enby.clone()
-					} else {
-						bi.clone()
-					}
+					gay_materials[(choose_mat * gay_materials.len() as f64) as usize].clone()
 				} else {
 					if choose_mat < 0.8 {
 						Arc::new(Lambertian::with_color(
@@ -122,7 +133,11 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 		1.0,
 		material1,
 	)));
-	let material2 = Arc::new(Lambertian::with_color(Color::new(0.4, 0.2, 0.1)));
+	let material2: Arc<dyn Material> = if gay {
+		Arc::new(DiffuseLight::with_color(Color::new(4.0, 4.0, 4.0)))
+	} else {
+		Arc::new(Lambertian::with_color(Color::new(0.4, 0.2, 0.1)))
+	};
 	world.add(Arc::new(Sphere::new(
 		Point3::new(-4.0, 1.0, 0.0),
 		1.0,
@@ -135,7 +150,23 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 		material3,
 	)));
 
-	(world, standard_camera(), sky())
+	if gay {
+		world.add(Arc::new(ConstantMedium::with_color(
+			Arc::new(Sphere::new(
+				Point3::zero(),
+				25.0,
+				Arc::new(Dielectric { ir: 0.0 }),
+			)),
+			0.05,
+			Color::new(0.04, 0.08, 0.1),
+		)));
+	}
+
+	(
+		world,
+		standard_camera(),
+		if gay { Color::zero() } else { sky() },
+	)
 }
 
 pub fn perlin_spheres<R: Rng + ?Sized>(rng: &mut R) -> Scene {
@@ -284,6 +315,7 @@ pub fn cornell_box() -> Scene {
 
 pub fn bisexual_lighting() -> Scene {
 	let (mut world, cam, background) = cornell_box();
+
 	world.add(Arc::new(XZRect::new(
 		0.0,
 		555.0,
