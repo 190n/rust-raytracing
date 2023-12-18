@@ -4,7 +4,7 @@ use crate::lib::{Point3, Vec3};
 
 const POINT_COUNT: usize = 256;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Perlin {
 	vecs: Vec<Vec3>,
 	perm_x: Vec<usize>,

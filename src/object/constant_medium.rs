@@ -4,7 +4,7 @@ use rand::{Rng, RngCore};
 
 use super::material::Isotropic;
 use super::texture::SolidColor;
-use super::{HitRecord, Hittable, Material, Texture};
+use super::{HitRecord, Hittable, Material, Sphere, Texture};
 use crate::lib::{Color, Ray, Vec3};
 use crate::scene::Aabb;
 
@@ -73,13 +73,20 @@ impl Hittable for ConstantMedium {
 				}
 
 				let t = rec1.t + hit_distance / ray_length;
+				let p = r.at(t);
+				let v = if let Some(bbox) = self.bounding_box(r.time(), r.time()) {
+					let center = (bbox.min() + bbox.max()) / 2.0;
+					Sphere::get_sphere_uv((p - center) / (bbox.max().x() - center.x())).1
+				} else {
+					1.0 // arbitrary
+				};
 				return Some(HitRecord {
 					t,
 					p: r.at(t),
 					normal: Vec3::new(1.0, 0.0, 0.0), // arbitrary
 					front_face: true,                 // arbitrary
 					u: 1.0,                           // arbitrary
-					v: 1.0,                           // arbitrary
+					v,
 					mat_ptr: self.phase_function.as_ref(),
 				});
 			}

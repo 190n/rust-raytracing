@@ -9,7 +9,8 @@ use super::HittableList;
 use crate::lib::{Color, Point3, Vec3};
 use crate::object::material::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
 use crate::object::texture::{
-	CheckerTexture, FunctionTexture, ImageTexture, NoiseTexture, SolidColor, StripeTexture, Texture,
+	CheckerTexture, FunctionTexture, ImageTexture, Mappable, NoiseTexture, SolidColor,
+	StripeTexture, Texture,
 };
 use crate::object::{
 	Block, ConstantMedium, Hittable, MovingSphere, RotateY, Sphere, Translate, XYRect, XZRect,
@@ -42,6 +43,11 @@ fn standard_camera() -> Camera {
 	)
 }
 
+enum GayMaterial {
+	Sphere(Arc<dyn Material>),
+	Glass(Arc<dyn Texture>),
+}
+
 pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) -> Scene {
 	let mut world = HittableList::new();
 
@@ -59,26 +65,22 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 		ground_material,
 	)));
 
-	let gay_materials: [Arc<dyn Material>; 16] = std::array::from_fn(|i| {
+	let gay_materials: [GayMaterial; 16] = std::array::from_fn(|i| {
 		let texture = match i % 4 {
-			0 => StripeTexture::trans_sphere(),
-			1 => StripeTexture::rainbow_sphere(),
-			2 => StripeTexture::enby_sphere(),
-			3 => StripeTexture::bi_sphere(),
+			0 => StripeTexture::<SolidColor>::trans_sphere(),
+			1 => StripeTexture::<SolidColor>::rainbow_sphere(),
+			2 => StripeTexture::<SolidColor>::enby_sphere(),
+			3 => StripeTexture::<SolidColor>::bi_sphere(),
 			4.. => unreachable!(),
 		};
 
 		return match i / 4 {
-			0 => Arc::new(Lambertian::new(texture)) as Arc<dyn Material>,
-			1 => Arc::new(Metal::new(texture, 0.2)) as Arc<dyn Material>,
-			2 => Arc::new(Dielectric { ir: 1.5 }) as Arc<dyn Material>,
-			3 => Arc::new(DiffuseLight::new(Arc::new(FunctionTexture({
-				let texture_ref = texture.clone();
-				move |u, v, p| {
-					let value = texture_ref.value(u, v, p);
-					return 20.0 * value;
-				}
-			})))) as Arc<dyn Material>,
+			0 => GayMaterial::Sphere(Arc::new(Lambertian::new(texture)) as Arc<dyn Material>),
+			1 => GayMaterial::Sphere(Arc::new(Metal::new(texture, 0.2))),
+			2 => GayMaterial::Glass(texture),
+			3 => GayMaterial::Sphere(Arc::new(DiffuseLight::new(Arc::new(
+				texture.map(&|c| 10.0 * (c.saturate() / 2.0 + c / 2.0)),
+			)))),
 			4.. => unreachable!(),
 		};
 	});
@@ -93,10 +95,23 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 			);
 
 			if (center - Point3::new(4.0, 0.2, 0.0)).length_squared() > 0.81 {
-				let sphere_material: Arc<dyn Material> = if gay {
-					gay_materials[(choose_mat * gay_materials.len() as f64) as usize].clone()
+				if gay {
+					match gay_materials[(choose_mat * gay_materials.len() as f64) as usize] {
+						GayMaterial::Sphere(ref mat) => {
+							world.add(Arc::new(Sphere::new(center, 0.2, mat.clone())))
+						},
+						GayMaterial::Glass(ref texture) => {
+							let sphere = Arc::new(Sphere::new(
+								center,
+								0.2,
+								Arc::new(Dielectric { ir: 1.5 }),
+							));
+							world.add(sphere.clone());
+							world.add(Arc::new(ConstantMedium::new(sphere, 50.0, texture.clone())));
+						},
+					}
 				} else {
-					if choose_mat < 0.8 {
+					let sphere_material: Arc<dyn Material> = if choose_mat < 0.8 {
 						Arc::new(Lambertian::with_color(
 							Color::random(rng) * Color::random(rng),
 						))
@@ -107,21 +122,21 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 						))
 					} else {
 						Arc::new(Dielectric { ir: 1.5 })
-					}
-				};
+					};
 
-				if next_week && choose_mat < 0.8 {
-					let center2 = center + Vec3::new(0.0, rng.gen_range(0.0..0.5), 0.0);
-					world.add(Arc::new(MovingSphere::new(
-						center,
-						center2,
-						0.0,
-						1.0,
-						0.2,
-						sphere_material,
-					)))
-				} else {
-					world.add(Arc::new(Sphere::new(center, 0.2, sphere_material)));
+					if next_week && choose_mat < 0.8 {
+						let center2 = center + Vec3::new(0.0, rng.gen_range(0.0..0.5), 0.0);
+						world.add(Arc::new(MovingSphere::new(
+							center,
+							center2,
+							0.0,
+							1.0,
+							0.2,
+							sphere_material,
+						)))
+					} else {
+						world.add(Arc::new(Sphere::new(center, 0.2, sphere_material.clone())));
+					}
 				}
 			}
 		}
@@ -134,7 +149,7 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 		material1,
 	)));
 	let material2: Arc<dyn Material> = if gay {
-		Arc::new(DiffuseLight::with_color(Color::new(4.0, 4.0, 4.0)))
+		Arc::new(DiffuseLight::with_color(Color::new(10.0, 10.0, 10.0)))
 	} else {
 		Arc::new(Lambertian::with_color(Color::new(0.4, 0.2, 0.1)))
 	};
@@ -158,7 +173,7 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 				Arc::new(Dielectric { ir: 0.0 }),
 			)),
 			0.05,
-			Color::new(0.04, 0.08, 0.1),
+			Color::new(0.6, 0.9, 1.0) / 2.0,
 		)));
 	}
 
@@ -171,9 +186,9 @@ pub fn random_scene<R: Rng + ?Sized>(rng: &mut R, next_week: bool, gay: bool) ->
 
 pub fn perlin_spheres<R: Rng + ?Sized>(rng: &mut R) -> Scene {
 	let mut world = HittableList::new();
-	let black = Arc::new(SolidColor::new(Color::zero()));
-	let white = Arc::new(SolidColor::new(Color::new(1.0, 1.0, 1.0)));
-	let perlin1 = Arc::new(NoiseTexture::new(rng, black.clone(), white.clone(), 4.0, 7));
+	let black = SolidColor::new(Color::zero());
+	let white = SolidColor::new(Color::new(1.0, 1.0, 1.0));
+	let perlin1 = Arc::new(NoiseTexture::new(rng, black, white, 4.0, 7));
 
 	let noise = NoiseTexture::new(rng, black, white, 10.0, 50);
 	let perlin2 = Arc::new(FunctionTexture(move |u, v, p| {
@@ -323,7 +338,7 @@ pub fn bisexual_lighting() -> Scene {
 		555.0,
 		554.9,
 		Arc::new(DiffuseLight::new(Arc::new(
-			StripeTexture::bi().as_ref().clone() * 2.0,
+			StripeTexture::<SolidColor>::bi().map(&|c| 2.0 * c),
 		))),
 	)));
 	world.add(Arc::new(Sphere::new(
@@ -437,8 +452,8 @@ pub fn week<R: Rng + ?Sized>(rng: &mut R) -> ImageResult<Scene> {
 	)));
 	let pertext = Arc::new(NoiseTexture::new(
 		rng,
-		Arc::new(SolidColor::new(Color::zero())),
-		Arc::new(SolidColor::new(Color::new(1.0, 1.0, 1.0))),
+		SolidColor::new(Color::zero()),
+		SolidColor::new(Color::new(1.0, 1.0, 1.0)),
 		0.1,
 		7,
 	));

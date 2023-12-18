@@ -15,7 +15,7 @@ pub struct Sphere {
 }
 
 impl Sphere {
-	fn get_sphere_uv(p: Point3) -> (f64, f64) {
+	pub fn get_sphere_uv(p: Point3) -> (f64, f64) {
 		let theta = f64::acos(-p.y());
 		let phi = f64::atan2(-p.z(), p.x()) + PI;
 		let u = phi / (2.0 * PI);

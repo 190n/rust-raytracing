@@ -1,4 +1,5 @@
 use std::{
+	fmt::Display,
 	iter::Sum,
 	ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
@@ -239,6 +240,12 @@ impl Div<f64> for Vec3 {
 impl Sum for Vec3 {
 	fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
 		iter.reduce(|a, b| a + b).unwrap_or_default()
+	}
+}
+
+impl Display for Vec3 {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "({}, {}, {})", self.x(), self.y(), self.z())
 	}
 }
 

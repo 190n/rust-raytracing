@@ -130,4 +130,31 @@ impl Color {
 	pub fn tonemap(&self) -> Color {
 		self.oetf().clamp()
 	}
+
+	pub fn saturate(&self) -> Color {
+		let epsilon = 1e-8;
+		if (self.x() - self.y()).abs() < epsilon && (self.x() - self.z()).abs() < epsilon {
+			let value = if self.x() < 0.5 { 0.0 } else { 1.0 };
+			return Color::new(value, value, value);
+		}
+		let mut channels: [(f64, u8); 3] = [(self.x(), 0), (self.y(), 1), (self.z(), 2)];
+		channels.sort_by(|a, b| a.0.total_cmp(&b.0));
+
+		if (channels[1].0 - channels[2].0).abs() < epsilon {
+			channels[0].0 = 0.0;
+			channels[1].0 = 1.0;
+			channels[2].0 = 1.0;
+		} else if (channels[0].0 - channels[1].0).abs() < epsilon {
+			channels[0].0 = 0.0;
+			channels[1].0 = 0.0;
+			channels[2].0 = 1.0;
+		} else {
+			channels[1].0 = 1.0 - (channels[2].0 - channels[1].0) / (channels[2].0 - channels[0].0);
+			channels[0].0 = 0.0;
+			channels[2].0 = 1.0;
+		}
+
+		channels.sort_by(|a, b| a.1.cmp(&b.1));
+		return Color::new(channels[0].0, channels[1].0, channels[2].0);
+	}
 }
