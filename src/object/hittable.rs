@@ -60,7 +60,12 @@ impl Hittable for Translate {
 	}
 
 	fn hit(&self, rng: &mut dyn RngCore, r: Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
-		let translated_ray = Ray::new(r.origin() - self.offset, r.direction(), r.time());
+		let translated_ray = Ray::new(
+			r.origin() - self.offset,
+			r.direction(),
+			r.time(),
+			r.debug_bvh(),
+		);
 		self.child
 			.hit(rng, translated_ray, t_min, t_max)
 			.map(|mut rec| {
@@ -130,7 +135,7 @@ impl Hittable for RotateY {
 		direction[0] = self.cos_theta * r.direction()[0] - self.sin_theta * r.direction()[2];
 		direction[2] = self.sin_theta * r.direction()[0] + self.cos_theta * r.direction()[2];
 
-		let rotated_ray = Ray::new(origin, direction, r.time());
+		let rotated_ray = Ray::new(origin, direction, r.time(), r.debug_bvh());
 		self.child
 			.hit(rng, rotated_ray, t_min, t_max)
 			.map(|mut rec| {

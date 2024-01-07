@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
 
+use crate::args::DebugMode;
 use crate::lib::{Color, Ray};
 use crate::object::Hittable;
 use crate::scene::Camera;
@@ -34,7 +35,9 @@ fn ray_color(
 	background: Color,
 	world: &dyn Hittable,
 	depth: i32,
+	peak_depth: &mut i32,
 ) -> Color {
+	*peak_depth += 1;
 	if depth <= 0 {
 		return Color::zero();
 	}
@@ -42,7 +45,9 @@ fn ray_color(
 	if let Some(rec) = world.hit(rng, r, 0.001, f64::INFINITY) {
 		let emitted = rec.mat_ptr.emitted(rec.u, rec.v, rec.p);
 		if let Some(res) = rec.mat_ptr.scatter(rng, &r, &rec) {
-			emitted + res.attenuation * ray_color(rng, res.scattered, background, world, depth - 1)
+			emitted
+				+ res.attenuation
+					* ray_color(rng, res.scattered, background, world, depth - 1, peak_depth)
 		} else {
 			emitted
 		}
@@ -65,6 +70,7 @@ pub fn render(
 	samples_per_pixel: usize,
 	max_depth: usize,
 	current_pos: Arc<Mutex<(usize, usize)>>,
+	debug_mode: Option<DebugMode>,
 ) -> (Duration, usize) {
 	let mut total_time = Duration::ZERO;
 	let mut total_pixels = 0usize;
@@ -108,11 +114,25 @@ pub fn render(
 
 				let mut pixel_color = Color::zero();
 				for _ in 0..samples_per_pixel {
+					let mut peak_depth: i32 = 0;
 					let u = (i as f64 + rng.gen::<f64>()) / (width - 1) as f64;
 					let v = (j as f64 + rng.gen::<f64>()) / (height - 1) as f64;
-					let r = cam.get_ray(&mut rng, u, v);
-					pixel_color +=
-						ray_color(&mut rng, r, background, world.as_ref(), max_depth as i32);
+					let r = cam.get_ray(&mut rng, u, v, debug_mode == Some(DebugMode::Bvh));
+					let color = ray_color(
+						&mut rng,
+						r,
+						background,
+						world.as_ref(),
+						max_depth as i32,
+						&mut peak_depth,
+					);
+
+					if debug_mode == Some(DebugMode::Depth) {
+						let shade = peak_depth as f64 / max_depth as f64;
+						pixel_color += Color::new(shade, shade, shade);
+					} else {
+						pixel_color += color;
+					}
 				}
 				let factor = 1.0 / samples_per_pixel as f64;
 				tile.pixels[j - y][i - x] = pixel_color * factor;

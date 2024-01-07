@@ -47,7 +47,7 @@ impl Material for Lambertian {
 		}
 
 		Some(ScatterResult {
-			scattered: Ray::new(rec.p, scatter_direction, r_in.time()),
+			scattered: Ray::new(rec.p, scatter_direction, r_in.time(), false),
 			attenuation: self.albedo.value(rec.u, rec.v, rec.p),
 		})
 	}
@@ -76,6 +76,7 @@ impl Material for Metal {
 			rec.p,
 			reflected + self.fuzz * Vec3::random_in_unit_sphere(rng),
 			r_in.time(),
+			false,
 		);
 		if scattered.direction().dot(rec.normal) > 0.0 {
 			Some(ScatterResult {
@@ -125,7 +126,7 @@ impl Material for Dielectric {
 
 		Some(ScatterResult {
 			attenuation: Color::new(1.0, 1.0, 1.0),
-			scattered: Ray::new(rec.p, direction, r_in.time()),
+			scattered: Ray::new(rec.p, direction, r_in.time(), false),
 		})
 	}
 }
@@ -177,7 +178,7 @@ impl Material for Isotropic {
 	fn scatter(&self, rng: &mut dyn RngCore, r_in: &Ray, rec: &HitRecord) -> Option<ScatterResult> {
 		Some(ScatterResult {
 			attenuation: self.albedo.value(rec.u, rec.v, rec.p),
-			scattered: Ray::new(rec.p, Vec3::random_in_unit_sphere(rng), r_in.time()),
+			scattered: Ray::new(rec.p, Vec3::random_in_unit_sphere(rng), r_in.time(), false),
 		})
 	}
 }

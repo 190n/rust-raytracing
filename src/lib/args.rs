@@ -17,6 +17,7 @@ pub struct Args {
 	pub verbose: bool,
 	pub format: FileFormat,
 	pub bit_depth: u8,
+	pub debug_mode: Option<DebugMode>,
 }
 
 pub struct ParseEnumError(pub &'static str);
@@ -89,6 +90,23 @@ impl FromStr for FileFormat {
 	}
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DebugMode {
+	Depth,
+	Bvh,
+}
+
+impl FromStr for DebugMode {
+	type Err = ParseEnumError;
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"depth" => Ok(Self::Depth),
+			"bvh" => Ok(Self::Bvh),
+			_ => Err(ParseEnumError("debug mode")),
+		}
+	}
+}
+
 pub enum Error {
 	PicoError(pico_args::Error),
 	UnrecognizedArguments(Vec<OsString>),
@@ -151,6 +169,12 @@ pub fn show_help() {
 			"  -b, --bit-depth n:         number of bits per channel in the output image.\n",
 			"                             default: 8. range: 1-8 for PPM, 1-16 for PNG.\n",
 			"                             ignored for OpenEXR (32-bit float is used).\n",
+			"  -D, --debug-mode mode:     render a debug view instead of the actual scene. values of\n",
+			"                             mode:\n",
+			"    depth:\n",
+			"      draw a heatmap of how many ray bounces occurred at each pixel\n",
+			"    bvh:\n",
+			"      indicate which BVH nodes were first hit using a random color\n",
 			"  -v, --verbose:             log performance data to stderr\n",
 			"  -S, --scene scene:         which scene to render. options:\n",
 			"    weekend:\n",
@@ -230,6 +254,7 @@ pub fn parse() -> Result<Args, Error> {
 		bit_depth: pargs
 			.opt_value_from_str(["-b", "--bit-depth"])?
 			.unwrap_or(8),
+		debug_mode: pargs.opt_value_from_str(["-D", "--debug"])?,
 	};
 
 	if args.threads == 0 {

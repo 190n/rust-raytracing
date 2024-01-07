@@ -1,3 +1,5 @@
+#![feature(ptr_metadata)]
+
 mod lib;
 mod object;
 mod output;
@@ -121,6 +123,7 @@ fn main() -> io::Result<()> {
 					samples_per_pixel,
 					max_depth,
 					pos,
+					args.debug_mode,
 				)
 			}));
 		}
