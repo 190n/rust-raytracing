@@ -66,18 +66,45 @@ impl Display for Eta {
 	}
 }
 
-fn channel_from_image<const CHANNEL: u8>(image: &Vec<Vec<Color>>, bit_depth: u8) -> FlatSamples {
+enum Channel {
+	Red,
+	Green,
+	Blue,
+}
+
+trait IsChannel {
+	const CHANNEL: Channel;
+}
+
+struct Red;
+
+struct Green;
+
+struct Blue;
+
+impl IsChannel for Red {
+	const CHANNEL: Channel = Channel::Red;
+}
+
+impl IsChannel for Green {
+	const CHANNEL: Channel = Channel::Green;
+}
+
+impl IsChannel for Blue {
+	const CHANNEL: Channel = Channel::Blue;
+}
+
+fn channel_from_image<C: IsChannel>(image: &Vec<Vec<Color>>, bit_depth: u8) -> FlatSamples {
 	match bit_depth {
 		16 => FlatSamples::F16(
 			image
 				.iter()
 				.flat_map(|row| {
 					row.iter().map(|pixel| {
-						f16::from_f64(match CHANNEL {
-							0 => pixel.x(),
-							1 => pixel.y(),
-							2 => pixel.z(),
-							_ => unreachable!(),
+						f16::from_f64(match C::CHANNEL {
+							Channel::Red => pixel.x(),
+							Channel::Green => pixel.y(),
+							Channel::Blue => pixel.z(),
 						})
 					})
 				})
@@ -88,11 +115,10 @@ fn channel_from_image<const CHANNEL: u8>(image: &Vec<Vec<Color>>, bit_depth: u8)
 				.iter()
 				.flat_map(|row| {
 					row.iter().map(|pixel| {
-						(match CHANNEL {
-							0 => pixel.x(),
-							1 => pixel.y(),
-							2 => pixel.z(),
-							_ => unreachable!(),
+						(match C::CHANNEL {
+							Channel::Red => pixel.x(),
+							Channel::Green => pixel.y(),
+							Channel::Blue => pixel.z(),
 						}) as f32
 					})
 				})
@@ -241,9 +267,9 @@ fn main() -> io::Result<()> {
 		},
 		FileFormat::Exr => {
 			let channels = AnyChannels::sort(smallvec![
-				AnyChannel::new("R", channel_from_image::<0>(&image, args.bit_depth)),
-				AnyChannel::new("G", channel_from_image::<1>(&image, args.bit_depth)),
-				AnyChannel::new("B", channel_from_image::<2>(&image, args.bit_depth)),
+				AnyChannel::new("R", channel_from_image::<Red>(&image, args.bit_depth)),
+				AnyChannel::new("G", channel_from_image::<Green>(&image, args.bit_depth)),
+				AnyChannel::new("B", channel_from_image::<Blue>(&image, args.bit_depth)),
 			]);
 			let mut image = Image::from_channels((image_width, image_height), channels);
 			// // sRGB
