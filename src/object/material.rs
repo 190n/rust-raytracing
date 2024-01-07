@@ -6,7 +6,7 @@ use rand::{Rng, RngCore};
 use super::texture::SolidColor;
 use super::HitRecord;
 use super::Texture;
-use crate::lib::{Color, Point3, Ray, Vec3};
+use crate::common::{Color, Point3, Ray, Vec3};
 
 pub struct ScatterResult {
 	pub attenuation: Color,

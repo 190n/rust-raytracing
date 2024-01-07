@@ -1,7 +1,7 @@
 use std::io::{self, BufWriter, Write};
 
 use super::ImageWriter;
-use crate::lib::color::{Color, Dither};
+use crate::common::color::{Color, Dither};
 
 pub struct PpmWriter<W: Write> {
 	dest: BufWriter<W>,

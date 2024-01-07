@@ -1,6 +1,6 @@
 #![feature(ptr_metadata)]
 
-mod lib;
+mod common;
 mod object;
 mod output;
 mod scene;
@@ -17,9 +17,9 @@ use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256PlusPlus;
 use time::OffsetDateTime;
 
-use lib::args::{self, FileFormat, WhichScene};
-use lib::raytracer::{render, Tile, TILE_SIZE};
-use lib::Color;
+use common::args::{self, FileFormat, WhichScene};
+use common::raytracer::{render, Tile, TILE_SIZE};
+use common::Color;
 use output::png::PngRenderingIntent;
 use output::{ImageWriter, PngWriter, PpmWriter};
 use scene::{scenes, BvhNode};

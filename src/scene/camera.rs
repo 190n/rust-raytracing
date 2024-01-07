@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use crate::lib::{Point3, Ray, Vec3};
+use crate::common::{Point3, Ray, Vec3};
 
 #[derive(Clone, Copy)]
 pub struct Camera {

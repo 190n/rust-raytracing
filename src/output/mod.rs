@@ -6,7 +6,7 @@ pub use ppm::PpmWriter;
 
 use std::io;
 
-use crate::lib::Color;
+use crate::common::Color;
 
 pub trait ImageWriter {
 	fn write_header(&mut self) -> io::Result<()>;

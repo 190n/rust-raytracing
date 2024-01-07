@@ -7,7 +7,7 @@ use flate2::Compression;
 use time::OffsetDateTime;
 
 use super::ImageWriter;
-use crate::lib::color::{Color, Dither};
+use crate::common::color::{Color, Dither};
 use chunk::PngChunk;
 
 pub use chunk::PngRenderingIntent;

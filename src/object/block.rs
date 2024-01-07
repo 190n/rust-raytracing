@@ -3,7 +3,7 @@ use std::sync::Arc;
 use rand::RngCore;
 
 use super::{HitRecord, Hittable, Material, XYRect, XZRect, YZRect};
-use crate::lib::{Point3, Ray};
+use crate::common::{Point3, Ray};
 use crate::scene::{Aabb, HittableList};
 
 #[derive(Debug)]

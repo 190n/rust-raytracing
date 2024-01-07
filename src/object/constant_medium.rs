@@ -5,7 +5,7 @@ use rand::{Rng, RngCore};
 use super::material::Isotropic;
 use super::texture::SolidColor;
 use super::{HitRecord, Hittable, Material, Sphere, Texture};
-use crate::lib::{Color, Ray, Vec3};
+use crate::common::{Color, Ray, Vec3};
 use crate::scene::Aabb;
 
 #[derive(Debug)]

@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use rand::{Rng, RngCore};
 
-use crate::lib::{Color, Point3, Ray, Vec3};
+use crate::common::{Color, Point3, Ray, Vec3};
 use crate::object::{material::ScatterResult, HitRecord, Hittable, Material};
 use crate::scene::Aabb;
 

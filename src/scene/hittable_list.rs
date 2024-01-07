@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use rand::RngCore;
 
-use crate::lib::Ray;
+use crate::common::Ray;
 use crate::object::{HitRecord, Hittable};
 use crate::scene::Aabb;
 

@@ -5,7 +5,7 @@ use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
 
 use crate::args::DebugMode;
-use crate::lib::{Color, Ray};
+use crate::common::{Color, Ray};
 use crate::object::Hittable;
 use crate::scene::Camera;
 

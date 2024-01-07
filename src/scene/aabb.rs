@@ -1,4 +1,4 @@
-use crate::lib::{Point3, Ray};
+use crate::common::{Point3, Ray};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Aabb {

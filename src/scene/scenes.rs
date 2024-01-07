@@ -6,7 +6,7 @@ use rand::Rng;
 use super::BvhNode;
 use super::Camera;
 use super::HittableList;
-use crate::lib::{Color, Point3, Vec3};
+use crate::common::{Color, Point3, Vec3};
 use crate::object::material::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
 use crate::object::texture::{
 	CheckerTexture, FunctionTexture, ImageTexture, Mappable, NoiseTexture, SolidColor,

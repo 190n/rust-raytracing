@@ -8,7 +8,7 @@ use once_cell::sync::OnceCell;
 use rand::Rng;
 
 use super::Perlin;
-use crate::lib::{Color, Point3};
+use crate::common::{Color, Point3};
 
 pub trait Texture: Debug + Sync + Send {
 	fn value(&self, u: f64, v: f64, p: Point3) -> Color;
