@@ -12,9 +12,14 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
-use exr::prelude::*;
+use exr::image::{write::WritableImage, Image};
+use exr::image::{AnyChannel, AnyChannels, FlatSamples};
+use exr::math::Vec2;
+use exr::meta::attribute::Chromaticities;
+use half::f16;
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro256PlusPlus;
+use smallvec::smallvec;
 use time::OffsetDateTime;
 
 use common::args::{self, FileFormat, WhichScene};
@@ -58,6 +63,42 @@ impl Display for Eta {
 			write!(f, "{}", secs)?;
 		}
 		Ok(())
+	}
+}
+
+fn channel_from_image<const CHANNEL: u8>(image: &Vec<Vec<Color>>, bit_depth: u8) -> FlatSamples {
+	match bit_depth {
+		16 => FlatSamples::F16(
+			image
+				.iter()
+				.flat_map(|row| {
+					row.iter().map(|pixel| {
+						f16::from_f64(match CHANNEL {
+							0 => pixel.x(),
+							1 => pixel.y(),
+							2 => pixel.z(),
+							_ => unreachable!(),
+						})
+					})
+				})
+				.collect(),
+		),
+		32 => FlatSamples::F32(
+			image
+				.iter()
+				.flat_map(|row| {
+					row.iter().map(|pixel| {
+						(match CHANNEL {
+							0 => pixel.x(),
+							1 => pixel.y(),
+							2 => pixel.z(),
+							_ => unreachable!(),
+						}) as f32
+					})
+				})
+				.collect(),
+		),
+		_ => unreachable!(),
 	}
 }
 
@@ -199,13 +240,14 @@ fn main() -> io::Result<()> {
 			output_writer.end()?;
 		},
 		FileFormat::Exr => {
-			let channels = SpecificChannels::rgb(|pos: Vec2<usize>| {
-				let pixel = image[pos.1][pos.0];
-				(pixel.x() as f32, pixel.y() as f32, pixel.z() as f32)
-			});
+			let channels = AnyChannels::sort(smallvec![
+				AnyChannel::new("R", channel_from_image::<0>(&image, args.bit_depth)),
+				AnyChannel::new("G", channel_from_image::<1>(&image, args.bit_depth)),
+				AnyChannel::new("B", channel_from_image::<2>(&image, args.bit_depth)),
+			]);
 			let mut image = Image::from_channels((image_width, image_height), channels);
-			// sRGB
-			image.attributes.chromaticities = Some(attribute::Chromaticities {
+			// // sRGB
+			image.attributes.chromaticities = Some(Chromaticities {
 				red: Vec2(0.64, 0.33),
 				green: Vec2(0.30, 0.60),
 				blue: Vec2(0.15, 0.06),

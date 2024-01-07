@@ -57,7 +57,7 @@ impl FromStr for WhichScene {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FileFormat {
 	Png,
 	Ppm,
@@ -167,8 +167,9 @@ pub fn show_help() {
 			"  -f, --format png|ppm|exr|: which format to output. default: guess from file\n",
 			"                             extension, or PPM for stdout\n",
 			"  -b, --bit-depth n:         number of bits per channel in the output image.\n",
-			"                             default: 8. range: 1-8 for PPM, 1-16 for PNG.\n",
-			"                             ignored for OpenEXR (32-bit float is used).\n",
+			"                             default: 8 for PNG or PPM, 32 for OpenEXR.\n",
+			"                             range: 1-8 for PPM, 1-16 for PNG.\n",
+			"                             for OpenEXR must be 16 or 32 (floating point).\n",
 			"  -D, --debug-mode mode:     render a debug view instead of the actual scene. values of\n",
 			"                             mode:\n",
 			"    depth:\n",
@@ -215,6 +216,7 @@ pub fn parse() -> Result<Args, Error> {
 
 	let mut did_get_seed_from_os = false;
 	let mut guess_format = false;
+	let mut guess_bit_depth = false;
 
 	let mut args = Args {
 		threads: pargs
@@ -253,7 +255,10 @@ pub fn parse() -> Result<Args, Error> {
 			}),
 		bit_depth: pargs
 			.opt_value_from_str(["-b", "--bit-depth"])?
-			.unwrap_or(8),
+			.unwrap_or_else(|| {
+				guess_bit_depth = true;
+				0
+			}),
 		debug_mode: pargs.opt_value_from_str(["-D", "--debug"])?,
 	};
 
@@ -291,6 +296,14 @@ pub fn parse() -> Result<Args, Error> {
 		}
 	}
 
+	if guess_bit_depth {
+		if args.format == FileFormat::Exr {
+			args.bit_depth = 32;
+		} else {
+			args.bit_depth = 8;
+		}
+	}
+
 	match args.format {
 		FileFormat::Png => {
 			if args.bit_depth < 1 || args.bit_depth > 16 {
@@ -312,7 +325,16 @@ pub fn parse() -> Result<Args, Error> {
 				));
 			}
 		},
-		_ => {},
+		FileFormat::Exr => {
+			if args.bit_depth != 16 && args.bit_depth != 32 {
+				return Err(Error::PicoError(
+					pico_args::Error::Utf8ArgumentParsingFailed {
+						value: args.bit_depth.to_string(),
+						cause: "OpenEXR image bit depth must be 16 or 32".to_string(),
+					},
+				));
+			}
+		},
 	}
 
 	let rest = pargs.finish();
