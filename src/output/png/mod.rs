@@ -62,10 +62,6 @@ impl<W: Write> FilterWriter<W> {
 		}
 	}
 
-	pub fn change_filter(&mut self, new_filter: FilterType) {
-		self.next_filter = new_filter;
-	}
-
 	pub fn finish(mut self) -> io::Result<W> {
 		self.dest.flush()?;
 		Ok(self.dest)

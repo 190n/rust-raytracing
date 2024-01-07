@@ -5,6 +5,7 @@ use time::{OffsetDateTime, UtcOffset};
 
 #[repr(u8)]
 #[derive(Clone, Copy)]
+#[allow(dead_code)]
 pub enum PngRenderingIntent {
 	Perceptual = 0,
 	RelativeColorimetric = 1,
@@ -12,11 +13,13 @@ pub enum PngRenderingIntent {
 	AbsoluteColorimetric = 3,
 }
 
+#[allow(dead_code)]
 pub enum TextData {
 	Uncompressed(String),
 	Compressed(Vec<u8>),
 }
 
+#[allow(dead_code)]
 pub enum PngChunk<'a> {
 	Ihdr {
 		width: u32,

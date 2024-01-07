@@ -145,34 +145,12 @@ impl StripeTexture<SolidColor> {
 }
 
 impl<T: Texture> StripeTexture<T> {
-	/// stripes:       which textures to use
-	/// sphere_adjust: if true, adjust stripe widths so that each stripe has equal surface area on a
-	///                sphere, instead of equal height
-	pub fn new(stripes: Vec<T>, sphere_adjust: bool) -> Self {
-		StripeTexture {
-			stripes,
-			sphere_adjust,
-		}
-	}
-
-	pub fn trans() -> Arc<StripeTexture<SolidColor>> {
-		flag_cell!(&StripeTexture::trans_colors(), false)
-	}
-
 	pub fn trans_sphere() -> Arc<StripeTexture<SolidColor>> {
 		flag_cell!(&StripeTexture::trans_colors(), true)
 	}
 
-	pub fn rainbow() -> Arc<StripeTexture<SolidColor>> {
-		flag_cell!(&StripeTexture::rainbow_colors(), false)
-	}
-
 	pub fn rainbow_sphere() -> Arc<StripeTexture<SolidColor>> {
 		flag_cell!(&StripeTexture::rainbow_colors(), true)
-	}
-
-	pub fn enby() -> Arc<StripeTexture<SolidColor>> {
-		flag_cell!(&StripeTexture::enby_colors(), false)
 	}
 
 	pub fn enby_sphere() -> Arc<StripeTexture<SolidColor>> {
