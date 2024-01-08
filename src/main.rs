@@ -66,45 +66,32 @@ impl Display for Eta {
 	}
 }
 
-enum Channel {
-	Red,
-	Green,
-	Blue,
+struct CheckValidChannel<const CHANNEL: u8>;
+
+impl<const CHANNEL: u8> CheckValidChannel<CHANNEL> {
+	const OK: () = assert!(CHANNEL < 3);
 }
 
-trait IsChannel {
-	const CHANNEL: Channel;
+// fake enum since rust doesn't support enums in const generics
+mod channel {
+	pub const RED: u8 = 0;
+	pub const GREEN: u8 = 1;
+	pub const BLUE: u8 = 2;
 }
 
-struct Red;
-
-struct Green;
-
-struct Blue;
-
-impl IsChannel for Red {
-	const CHANNEL: Channel = Channel::Red;
-}
-
-impl IsChannel for Green {
-	const CHANNEL: Channel = Channel::Green;
-}
-
-impl IsChannel for Blue {
-	const CHANNEL: Channel = Channel::Blue;
-}
-
-fn channel_from_image<C: IsChannel>(image: &Vec<Vec<Color>>, bit_depth: u8) -> FlatSamples {
+fn channel_from_image<const CHANNEL: u8>(image: &Vec<Vec<Color>>, bit_depth: u8) -> FlatSamples {
+	let _ = CheckValidChannel::<CHANNEL>::OK;
 	match bit_depth {
 		16 => FlatSamples::F16(
 			image
 				.iter()
 				.flat_map(|row| {
 					row.iter().map(|pixel| {
-						f16::from_f64(match C::CHANNEL {
-							Channel::Red => pixel.x(),
-							Channel::Green => pixel.y(),
-							Channel::Blue => pixel.z(),
+						f16::from_f64(match CHANNEL {
+							channel::RED => pixel.x(),
+							channel::GREEN => pixel.y(),
+							channel::BLUE => pixel.z(),
+							_ => unreachable!(),
 						})
 					})
 				})
@@ -115,10 +102,11 @@ fn channel_from_image<C: IsChannel>(image: &Vec<Vec<Color>>, bit_depth: u8) -> F
 				.iter()
 				.flat_map(|row| {
 					row.iter().map(|pixel| {
-						(match C::CHANNEL {
-							Channel::Red => pixel.x(),
-							Channel::Green => pixel.y(),
-							Channel::Blue => pixel.z(),
+						(match CHANNEL {
+							channel::RED => pixel.x(),
+							channel::GREEN => pixel.y(),
+							channel::BLUE => pixel.z(),
+							_ => unreachable!(),
 						}) as f32
 					})
 				})
@@ -267,9 +255,18 @@ fn main() -> io::Result<()> {
 		},
 		FileFormat::Exr => {
 			let channels = AnyChannels::sort(smallvec![
-				AnyChannel::new("R", channel_from_image::<Red>(&image, args.bit_depth)),
-				AnyChannel::new("G", channel_from_image::<Green>(&image, args.bit_depth)),
-				AnyChannel::new("B", channel_from_image::<Blue>(&image, args.bit_depth)),
+				AnyChannel::new(
+					"R",
+					channel_from_image::<{ channel::RED }>(&image, args.bit_depth)
+				),
+				AnyChannel::new(
+					"G",
+					channel_from_image::<{ channel::GREEN }>(&image, args.bit_depth)
+				),
+				AnyChannel::new(
+					"B",
+					channel_from_image::<{ channel::BLUE }>(&image, args.bit_depth)
+				),
 			]);
 			let mut image = Image::from_channels((image_width, image_height), channels);
 			// // sRGB
