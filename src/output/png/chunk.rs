@@ -45,11 +45,19 @@ pub enum TransferFunction {
 	Hlg = 18,
 }
 
+#[repr(u8)]
+#[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
+pub enum ColorRange {
+	Limited = 0,
+	Full = 1,
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct Cicp {
-	color_primaries: ColorPrimaries,
-	transfer_function: TransferFunction,
-	full_range: bool,
+	pub color_primaries: ColorPrimaries,
+	pub transfer_function: TransferFunction,
+	pub range: ColorRange,
 }
 
 #[allow(dead_code)]
@@ -262,13 +270,13 @@ impl<'a> PngChunk<'a> {
 			&PngChunk::Cicp(Cicp {
 				color_primaries,
 				transfer_function,
-				full_range,
+				range,
 			}) => {
 				crc.write_all(&[
 					color_primaries as u8,
 					transfer_function as u8,
 					0, // matrix coefficients = RGB
-					full_range as u8,
+					range as u8,
 				])?;
 			},
 		}

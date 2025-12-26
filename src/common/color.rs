@@ -94,6 +94,29 @@ fn linear_to_srgb(value: f64) -> f64 {
 	}
 }
 
+fn linear_to_hlg(value: f64) -> f64 {
+	const R: f64 = 0.5;
+	const A: f64 = 0.17883277;
+	const B: f64 = 1.0 - 4.0 * A;
+	const C: f64 = 0.55991073;
+
+	if value <= 1.0 {
+		R * f64::sqrt(value)
+	} else {
+		A * f64::ln(value - B) + C
+	}
+}
+
+fn linear_to_pq(value: f64) -> f64 {
+	const M1: f64 = 2610.0 / 16384.0;
+	const M2: f64 = 128.0 * 2523.0 / 4096.0;
+	const C1: f64 = 3424.0 / 4096.0;
+	const C2: f64 = 32.0 * 2413.0 / 4096.0;
+	const C3: f64 = 32.0 * 2392.0 / 4096.0;
+
+	return ((C1 + C2 * value.powf(M1)) / (1.0 + C3 * value.powf(M1))).powf(M2);
+}
+
 impl Color {
 	pub fn from_srgb(r: u8, g: u8, b: u8) -> Color {
 		Color::new(
@@ -111,7 +134,7 @@ impl Color {
 		)
 	}
 
-	fn oetf(&self) -> Color {
+	pub fn srgb_oetf(&self) -> Color {
 		Color::new(
 			linear_to_srgb(self.x()),
 			linear_to_srgb(self.y()),
@@ -119,16 +142,29 @@ impl Color {
 		)
 	}
 
-	fn clamp(&self) -> Color {
+	pub fn hlg_oetf(&self) -> Color {
+		Color::new(
+			linear_to_hlg(self.x()),
+			linear_to_hlg(self.y()),
+			linear_to_hlg(self.z()),
+		)
+	}
+
+	pub fn pq_oetf(&self, peak_brightness: f64) -> Color {
+		// TODO take a scale factor or something
+		Color::new(
+			linear_to_pq(self.x() / peak_brightness),
+			linear_to_pq(self.y() / peak_brightness),
+			linear_to_pq(self.z() / peak_brightness),
+		)
+	}
+
+	pub fn clamp(&self) -> Color {
 		Color::new(
 			self.x().clamp(0.0, 1.0),
 			self.y().clamp(0.0, 1.0),
 			self.z().clamp(0.0, 1.0),
 		)
-	}
-
-	pub fn tonemap(&self) -> Color {
-		self.oetf().clamp()
 	}
 
 	pub fn saturate(&self) -> Color {

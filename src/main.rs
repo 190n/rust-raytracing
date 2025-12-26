@@ -22,10 +22,10 @@ use rand_xoshiro::Xoshiro256PlusPlus;
 use smallvec::smallvec;
 use time::OffsetDateTime;
 
-use common::args::{self, FileFormat, WhichScene};
+use common::args::{self, FileFormat, TransferFunction, WhichScene};
 use common::raytracer::{render, Tile, TILE_SIZE};
 use common::Color;
-use output::png::{PngColor, PngRenderingIntent};
+use output::png::{self, ColorPrimaries, ColorRange, PngColor, PngRenderingIntent};
 use output::{ImageWriter, PngWriter, PpmWriter};
 use scene::{scenes, BvhNode};
 
@@ -239,7 +239,26 @@ fn main() -> io::Result<()> {
 						(image_width, image_height),
 						args.bit_depth,
 						Some(OffsetDateTime::now_utc()),
-						PngColor::Srgb(PngRenderingIntent::Perceptual),
+						match args.transfer_function {
+							TransferFunction::Srgb => {
+								PngColor::new_srgb(PngRenderingIntent::Perceptual)
+							},
+							TransferFunction::Linear => PngColor::new_cicp(
+								ColorPrimaries::Bt709,
+								png::TransferFunction::Linear,
+								ColorRange::Full,
+							),
+							TransferFunction::Hlg => PngColor::new_cicp(
+								ColorPrimaries::Bt709,
+								png::TransferFunction::Hlg,
+								ColorRange::Full,
+							),
+							TransferFunction::Pq => PngColor::new_cicp(
+								ColorPrimaries::Bt709,
+								png::TransferFunction::Pq,
+								ColorRange::Full,
+							),
+						},
 					);
 					&mut png_writer
 				},
@@ -253,7 +272,12 @@ fn main() -> io::Result<()> {
 
 			output_writer.write_header()?;
 			for mut row in image {
-				row.iter_mut().for_each(|p| *p = p.tonemap());
+				row.iter_mut().for_each(match args.transfer_function {
+					TransferFunction::Srgb => |p: &mut Color| *p = p.srgb_oetf().clamp(),
+					TransferFunction::Linear => |p: &mut Color| *p = p.clamp(),
+					TransferFunction::Hlg => |p: &mut Color| *p = p.hlg_oetf().clamp(),
+					TransferFunction::Pq => |p: &mut Color| *p = p.pq_oetf(100.0).clamp(),
+				});
 				output_writer.write_pixels(&row)?;
 			}
 			output_writer.end()?;

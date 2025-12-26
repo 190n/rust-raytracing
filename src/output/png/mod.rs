@@ -8,9 +8,9 @@ use time::OffsetDateTime;
 
 use super::ImageWriter;
 use crate::common::color::{Color, Dither};
-use chunk::PngChunk;
+use chunk::{Cicp, PngChunk};
 
-pub use chunk::PngRenderingIntent;
+pub use chunk::{ColorPrimaries, ColorRange, PngRenderingIntent, TransferFunction};
 
 const IDAT_SIZE: usize = 8192;
 
@@ -42,10 +42,29 @@ enum FilterType {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
 pub enum PngColor {
 	Unspecified,
 	Srgb(PngRenderingIntent),
 	Cicp(chunk::Cicp),
+}
+
+impl PngColor {
+	pub fn new_srgb(rendering_intent: PngRenderingIntent) -> Self {
+		Self::Srgb(rendering_intent)
+	}
+
+	pub fn new_cicp(
+		color_primaries: ColorPrimaries,
+		transfer_function: TransferFunction,
+		range: ColorRange,
+	) -> Self {
+		Self::Cicp(Cicp {
+			color_primaries,
+			transfer_function,
+			range,
+		})
+	}
 }
 
 /// writes scanlines to the underlying writer, filtering them and prepending a filter byte before
@@ -153,6 +172,7 @@ impl<W: Write> ImageWriter for PngWriter<W> {
 				PngChunk::Gama(1.0 / 2.2).write_to(buf)?;
 				PngChunk::Srgb(intent).write_to(buf)?;
 			},
+			// TODO: include mDCV and/or cLLI
 			PngColor::Cicp(cicp) => PngChunk::Cicp(cicp).write_to(buf)?,
 		}
 
