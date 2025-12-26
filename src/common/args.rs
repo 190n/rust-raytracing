@@ -17,6 +17,7 @@ pub struct Args {
 	pub verbose: bool,
 	pub format: FileFormat,
 	pub bit_depth: u8,
+	pub transfer_function: TransferFunction,
 	pub debug_mode: Option<DebugMode>,
 }
 
@@ -107,6 +108,38 @@ impl FromStr for DebugMode {
 	}
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferFunction {
+	Srgb,
+	Linear,
+	Hlg,
+	Pq,
+}
+
+impl FromStr for TransferFunction {
+	type Err = ParseEnumError;
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"srgb" => Ok(Self::Srgb),
+			"linear" => Ok(Self::Linear),
+			"hlg" => Ok(Self::Hlg),
+			"pq" => Ok(Self::Pq),
+			_ => Err(ParseEnumError("transfer function")),
+		}
+	}
+}
+
+impl Display for TransferFunction {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str(match *self {
+			Self::Srgb => "sRGB",
+			Self::Linear => "linear",
+			Self::Hlg => "HLG",
+			Self::Pq => "PQ",
+		})
+	}
+}
+
 pub enum Error {
 	PicoError(pico_args::Error),
 	UnrecognizedArguments(Vec<OsString>),
@@ -170,6 +203,8 @@ pub fn show_help() {
 			"                             default: 8 for PNG or PPM, 32 for OpenEXR.\n",
 			"                             range: 1-8 for PPM, 1-16 for PNG.\n",
 			"                             for OpenEXR must be 16 or 32 (floating point).\n",
+			"  -T, --transfer-function srgb|linear|hlg|pq:\n",
+			"                             transfer function of encoded image (PNG only).\n",
 			"  -D, --debug-mode mode:     render a debug view instead of the actual scene. values of\n",
 			"                             mode:\n",
 			"    depth:\n",
@@ -217,6 +252,7 @@ pub fn parse() -> Result<Args, Error> {
 	let mut did_get_seed_from_os = false;
 	let mut guess_format = false;
 	let mut guess_bit_depth = false;
+	let mut guess_transfer_function = false;
 
 	let mut args = Args {
 		threads: pargs
@@ -258,6 +294,12 @@ pub fn parse() -> Result<Args, Error> {
 			.unwrap_or_else(|| {
 				guess_bit_depth = true;
 				0
+			}),
+		transfer_function: pargs
+			.opt_value_from_str(["-T", "--transfer-function"])?
+			.unwrap_or_else(|| {
+				guess_transfer_function = true;
+				TransferFunction::Srgb
 			}),
 		debug_mode: pargs.opt_value_from_str(["-D", "--debug"])?,
 	};
@@ -304,6 +346,14 @@ pub fn parse() -> Result<Args, Error> {
 		}
 	}
 
+	if guess_transfer_function {
+		if args.format == FileFormat::Exr {
+			args.transfer_function = TransferFunction::Linear;
+		} else {
+			args.transfer_function = TransferFunction::Srgb;
+		}
+	}
+
 	match args.format {
 		FileFormat::Png => {
 			if args.bit_depth < 1 || args.bit_depth > 16 {
@@ -324,6 +374,14 @@ pub fn parse() -> Result<Args, Error> {
 					},
 				));
 			}
+			if args.transfer_function != TransferFunction::Srgb {
+				return Err(Error::PicoError(
+					pico_args::Error::Utf8ArgumentParsingFailed {
+						value: args.transfer_function.to_string(),
+						cause: "PPM transfer function must be sRGB".to_string(),
+					},
+				));
+			}
 		},
 		FileFormat::Exr => {
 			if args.bit_depth != 16 && args.bit_depth != 32 {
@@ -331,6 +389,14 @@ pub fn parse() -> Result<Args, Error> {
 					pico_args::Error::Utf8ArgumentParsingFailed {
 						value: args.bit_depth.to_string(),
 						cause: "OpenEXR image bit depth must be 16 or 32".to_string(),
+					},
+				));
+			}
+			if args.transfer_function != TransferFunction::Linear {
+				return Err(Error::PicoError(
+					pico_args::Error::Utf8ArgumentParsingFailed {
+						value: args.transfer_function.to_string(),
+						cause: "EXR transfer function must be linear".to_string(),
 					},
 				));
 			}

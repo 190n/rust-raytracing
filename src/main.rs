@@ -25,7 +25,7 @@ use time::OffsetDateTime;
 use common::args::{self, FileFormat, WhichScene};
 use common::raytracer::{render, Tile, TILE_SIZE};
 use common::Color;
-use output::png::PngRenderingIntent;
+use output::png::{PngColor, PngRenderingIntent};
 use output::{ImageWriter, PngWriter, PpmWriter};
 use scene::{scenes, BvhNode};
 
@@ -230,19 +230,24 @@ fn main() -> io::Result<()> {
 
 	match args.format {
 		FileFormat::Png | FileFormat::Ppm => {
-			let mut output_writer: Box<dyn ImageWriter> = match args.format {
-				FileFormat::Png => Box::new(PngWriter::new(
-					output,
-					(image_width, image_height),
-					args.bit_depth,
-					Some(OffsetDateTime::now_utc()),
-					Some(PngRenderingIntent::Perceptual),
-				)),
-				FileFormat::Ppm => Box::new(PpmWriter::new(
-					output,
-					(image_width, image_height),
-					args.bit_depth,
-				)),
+			let mut png_writer: PngWriter<&mut dyn Write>;
+			let mut ppm_writer: PpmWriter<&mut dyn Write>;
+			let output_writer: &mut dyn ImageWriter = match args.format {
+				FileFormat::Png => {
+					png_writer = PngWriter::new(
+						&mut output,
+						(image_width, image_height),
+						args.bit_depth,
+						Some(OffsetDateTime::now_utc()),
+						PngColor::Srgb(PngRenderingIntent::Perceptual),
+					);
+					&mut png_writer
+				},
+				FileFormat::Ppm => {
+					ppm_writer =
+						PpmWriter::new(&mut output, (image_width, image_height), args.bit_depth);
+					&mut ppm_writer
+				},
 				_ => unreachable!(),
 			};
 
@@ -269,7 +274,7 @@ fn main() -> io::Result<()> {
 				),
 			]);
 			let mut image = Image::from_channels((image_width, image_height), channels);
-			// // sRGB
+			// sRGB
 			image.attributes.chromaticities = Some(Chromaticities {
 				red: Vec2(0.64, 0.33),
 				green: Vec2(0.30, 0.60),

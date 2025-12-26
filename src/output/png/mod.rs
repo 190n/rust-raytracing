@@ -41,6 +41,13 @@ enum FilterType {
 	None = 0,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum PngColor {
+	Unspecified,
+	Srgb(PngRenderingIntent),
+	Cicp(chunk::Cicp),
+}
+
 /// writes scanlines to the underlying writer, filtering them and prepending a filter byte before
 /// each one
 struct FilterWriter<W: Write> {
@@ -94,7 +101,7 @@ pub struct PngWriter<W: Write> {
 	height: usize,
 	bits: u8,
 	time: Option<OffsetDateTime>,
-	srgb: Option<PngRenderingIntent>,
+	color: PngColor,
 	dither: Dither,
 }
 
@@ -104,7 +111,7 @@ impl<W: Write> PngWriter<W> {
 		(width, height): (usize, usize),
 		bits: u8,
 		time: Option<OffsetDateTime>,
-		srgb: Option<PngRenderingIntent>,
+		color: PngColor,
 	) -> Self {
 		assert!(bits > 0 && bits <= 16);
 		Self {
@@ -114,7 +121,7 @@ impl<W: Write> PngWriter<W> {
 			height,
 			bits,
 			time,
-			srgb,
+			color,
 			dither: Dither::new(bits, width),
 		}
 	}
@@ -140,9 +147,13 @@ impl<W: Write> ImageWriter for PngWriter<W> {
 		if let Some(time) = self.time {
 			PngChunk::Time(time).write_to(buf)?;
 		}
-		if let Some(intent) = self.srgb {
-			PngChunk::Gama(1.0 / 2.2).write_to(buf)?;
-			PngChunk::Srgb(intent).write_to(buf)?;
+		match self.color {
+			PngColor::Unspecified => {},
+			PngColor::Srgb(intent) => {
+				PngChunk::Gama(1.0 / 2.2).write_to(buf)?;
+				PngChunk::Srgb(intent).write_to(buf)?;
+			},
+			PngColor::Cicp(cicp) => PngChunk::Cicp(cicp).write_to(buf)?,
 		}
 
 		Ok(())

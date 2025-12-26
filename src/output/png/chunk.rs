@@ -4,7 +4,7 @@ use once_cell::unsync::Lazy;
 use time::{OffsetDateTime, UtcOffset};
 
 #[repr(u8)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 #[allow(dead_code)]
 pub enum PngRenderingIntent {
 	Perceptual = 0,
@@ -17,6 +17,39 @@ pub enum PngRenderingIntent {
 pub enum TextData {
 	Uncompressed(String),
 	Compressed(Vec<u8>),
+}
+
+/// From ITU-T-H.273
+#[repr(u8)]
+#[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
+pub enum ColorPrimaries {
+	/// also sRGB
+	Bt709 = 1,
+	Unspecified = 2,
+	Bt2020 = 9,
+}
+
+/// From ITU-T-H.273
+#[repr(u8)]
+#[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
+pub enum TransferFunction {
+	Bt709 = 1,
+	Unspecified = 2,
+	Gamma2_2 = 4,
+	Gamma2_8 = 5,
+	Linear = 8,
+	Srgb = 13,
+	Pq = 16,
+	Hlg = 18,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Cicp {
+	color_primaries: ColorPrimaries,
+	transfer_function: TransferFunction,
+	full_range: bool,
 }
 
 #[allow(dead_code)]
@@ -38,6 +71,7 @@ pub enum PngChunk<'a> {
 		text: TextData,
 	},
 	Time(OffsetDateTime),
+	Cicp(Cicp),
 }
 
 struct Crc32<W: Write>(u32, W);
@@ -108,6 +142,7 @@ impl<'a> PngChunk<'a> {
 				text: _,
 			} => b"iTXt",
 			PngChunk::Time(_) => b"tIME",
+			PngChunk::Cicp(_) => b"cICP",
 		}
 	}
 
@@ -145,6 +180,7 @@ impl<'a> PngChunk<'a> {
 					}
 			},
 			PngChunk::Time(_) => 7,
+			PngChunk::Cicp(_) => 4,
 		}
 	}
 
@@ -221,6 +257,18 @@ impl<'a> PngChunk<'a> {
 					utc_time.hour(),
 					utc_time.minute(),
 					utc_time.second(),
+				])?;
+			},
+			&PngChunk::Cicp(Cicp {
+				color_primaries,
+				transfer_function,
+				full_range,
+			}) => {
+				crc.write_all(&[
+					color_primaries as u8,
+					transfer_function as u8,
+					0, // matrix coefficients = RGB
+					full_range as u8,
 				])?;
 			},
 		}
